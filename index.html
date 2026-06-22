@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#E7E4D8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1A1916" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Live Cabin F camp schedule — what's happening right now, what's next, and your duties.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cabin F">
+<title>Right Now · Cabin F</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="clockbar">
+    <div class="clock">
+      <span class="time" id="cTime">--:--</span><span class="ampm" id="cAmpm"></span>
+      <span class="sec" id="cSec"></span>
+    </div>
+    <div class="daymeta">
+      <span class="pill" id="cDay">&mdash;</span>
+      <span class="pill preview" id="cPreview" style="display:none">Previewing</span>
+      <span id="cTheme"></span>
+    </div>
+    <div class="dayprogress"><span id="dayProgressFill" style="width:0%"></span></div>
+  </header>
+
+  <div class="controls">
+    <div class="daynav">
+      <button id="prevDay" aria-label="Previous day">&#8249;</button>
+      <span class="label" id="dayLabel">Today</span>
+      <button id="nextDay" aria-label="Next day">&#8250;</button>
+    </div>
+    <button class="toggle" id="dutiesToggle" aria-pressed="false">
+      <span class="dot"></span> My duties
+    </button>
+  </div>
+  <button class="preview-exit" id="backToday">&#8617; Back to today</button>
+
+  <div class="banner" id="banner">
+    <button class="close" id="bannerClose" aria-label="Dismiss">&times;</button>
+    <b>Weekday times are the official camp schedule</b> (ctccamp.org). Sunday (arrival) and
+    Saturday (checkout) times are estimates &mdash; edit anytime.
+    <br><button class="open-edit" id="bannerEdit">Edit times</button>
+  </div>
+
+  <section class="now" id="nowCard">
+    <div class="eyebrow">Right now</div>
+    <h1 id="nowTitle">&mdash;</h1>
+    <div class="detail" id="nowDetail"></div>
+    <div class="since" id="nowSince"></div>
+    <div class="nowbar" id="nowBar" style="display:none"><span id="nowBarFill" style="width:0%"></span></div>
+  </section>
+
+  <section class="next" id="nextCard">
+    <div class="l"><div class="eyebrow">Next</div><h2 id="nextTitle">&mdash;</h2><div class="nd" id="nextDetail"></div></div>
+    <div class="r"><div class="at" id="nextAt"></div><div class="in" id="nextIn"></div></div>
+  </section>
+
+  <div class="tl-head">
+    <div class="eyebrow">Timeline</div>
+    <h3 id="tlTitle">Today</h3>
+    <span class="count" id="tlCount"></span>
+  </div>
+  <ul class="tl" id="timeline"></ul>
+  <div class="daynote" id="dayNote" style="display:none"></div>
+
+  <div class="controls" style="margin-top:18px">
+    <button class="toggle" id="openEdit" style="margin-left:0">&#9201; Edit times</button>
+  </div>
+
+  <footer>
+    Live from your device clock &middot; maps weekday &rarr; camp day (Sun = Day 1 &hellip; Sat = Day 7).<br>
+    Cabin F duties flagged in clay. Works offline once loaded.
+  </footer>
+</div>
+
+<button class="fab" id="fab">Now</button>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="editSheet" role="dialog" aria-modal="true" aria-label="Edit times">
+  <div class="grab"></div>
+  <header>
+    <h3>Edit times</h3>
+    <button class="x" id="sheetClose" aria-label="Close">&times;</button>
+  </header>
+  <div class="body" id="editGroups"></div>
+  <div class="editbtns">
+    <button class="reset" id="resetBtn">Reset defaults</button>
+    <button class="save" id="saveBtn">Save times</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="./assets/js/app.js"></script>
+</body>
+</html>

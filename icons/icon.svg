@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Cabin F">
+  <defs>
+    <clipPath id="r"><rect x="0" y="0" width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="512" height="512" fill="#3C5240"/>
+    <rect width="512" height="512" fill="#DDE4D7" opacity="0.06"/>
+    <!-- clock face -->
+    <circle cx="256" cy="256" r="150" fill="#F6F4EC"/>
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#23211C" stroke-width="10"/>
+    <!-- hour ticks -->
+    <g stroke="#6E6A5C" stroke-width="9" stroke-linecap="round">
+      <line x1="256" y1="124" x2="256" y2="146"/>
+      <line x1="256" y1="366" x2="256" y2="388"/>
+      <line x1="124" y1="256" x2="146" y2="256"/>
+      <line x1="366" y1="256" x2="388" y2="256"/>
+    </g>
+    <!-- hands: pointing to "now" -->
+    <line x1="256" y1="256" x2="256" y2="166" stroke="#23211C" stroke-width="14" stroke-linecap="round"/>
+    <line x1="256" y1="256" x2="326" y2="290" stroke="#9E3A28" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="256" cy="256" r="16" fill="#9E3A28"/>
+  </g>
+</svg>

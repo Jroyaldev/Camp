@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Cabin F">
+  <rect width="512" height="512" fill="#3C5240"/>
+  <!-- motif kept within the ~80% maskable safe zone -->
+  <circle cx="256" cy="256" r="118" fill="#F6F4EC"/>
+  <circle cx="256" cy="256" r="118" fill="none" stroke="#23211C" stroke-width="8"/>
+  <g stroke="#6E6A5C" stroke-width="7" stroke-linecap="round">
+    <line x1="256" y1="152" x2="256" y2="170"/>
+    <line x1="256" y1="342" x2="256" y2="360"/>
+    <line x1="152" y1="256" x2="170" y2="256"/>
+    <line x1="342" y1="256" x2="360" y2="256"/>
+  </g>
+  <line x1="256" y1="256" x2="256" y2="185" stroke="#23211C" stroke-width="11" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="311" y2="283" stroke="#9E3A28" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="13" fill="#9E3A28"/>
+</svg>

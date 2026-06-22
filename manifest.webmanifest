@@ -1,0 +1,17 @@
+{
+  "name": "Right Now · Cabin F",
+  "short_name": "Cabin F",
+  "description": "Live Cabin F camp schedule — what's happening now, what's next, and your duties.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E7E4D8",
+  "theme_color": "#3C5240",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "./icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
