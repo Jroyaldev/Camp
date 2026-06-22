@@ -8,8 +8,8 @@ let TIMES = loadTimes();
 let SETTINGS = loadSettings();
 let activeTab = "now";
 let weekIndex = new Date().getDay();   // selected day on the Week tab
-let dutiesOnly = false;
 let lastSig = "";
+let draft = { cabin: "", section: "", grade: "" };
 
 function deepDefaults() { return JSON.parse(JSON.stringify(DEFAULTS)); }
 
@@ -182,7 +182,7 @@ function detailFor(id, item, dow) {
       let add = "Your class: " + loc + ".";
       const ct = classToday(dow);
       if (ct && ct.teacher) add += " Today: " + ct.teacher.name + " (" + ct.teacher.lesson + ").";
-      else if (ct && ct.friday) add += " Friday: all classes combine.";
+      else if (ct && ct.friday) add += " Friday: " + ct.note;
       det = (det ? det + " " : "") + add;
     }
   }
@@ -252,7 +252,7 @@ function render() {
   else if (activeTab === "info") renderInfoTab();
 
   if (activeTab === "now") updateLive(today.rows, currentIndex(today.rows, now), now);
-  lastSig = sig(today.dow, currentIndex(today.rows, now), dutiesOnly, activeTab);
+  lastSig = sig(today.dow, currentIndex(today.rows, now), activeTab);
 }
 
 /* ---- Now tab ---- */
@@ -260,24 +260,11 @@ function renderNowTab(rows, cur, day, now) {
   renderNow(rows, cur, now);
 
   $("tlTitle").textContent = "Today \u00b7 " + day.name;
+  const mineCount = rows.filter((r) => r.mine).length;
+  $("tlCount").textContent = rows.length + " blocks" + (mineCount ? " \u00b7 " + mineCount + " yours" : "");
   const ul = $("timeline");
   ul.innerHTML = "";
-  const visible = dutiesOnly ? rows.filter((r) => r.mine) : rows;
-  $("tlCount").textContent = dutiesOnly
-    ? visible.length + " of " + rows.length + " (your duties)"
-    : rows.length + " blocks";
-
-  if (!visible.length) {
-    const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = "No duties flagged for you today.";
-    ul.appendChild(li);
-  } else {
-    rows.forEach((r, i) => {
-      if (dutiesOnly && !r.mine) return;
-      ul.appendChild(rowEl(r, i, cur, true));
-    });
-  }
+  rows.forEach((r, i) => ul.appendChild(rowEl(r, i, cur, true)));
 
   const noteEl = $("dayNote");
   if (day.note) { noteEl.style.display = "block"; noteEl.textContent = day.note; }
@@ -401,49 +388,74 @@ function renderMineTab() {
   }
 }
 
-/* ---- Info tab ---- */
+/* ---- Info tab (slim: one personalized card, the rest collapsible) ---- */
 function renderInfoTab() {
   const host = $("infoBody");
   host.innerHTML = "";
 
+  const tier = classTier();
   const loc = classLocation();
+  const ct = loc ? classToday(new Date().getDay()) : null;
+  const todayName = ct && ct.teacher ? ct.teacher.name : "";
+
+  // 1. Personalized Bible class — leads the tab
   if (loc) {
-    let body = "<p><b>" + esc(loc) + "</b> \u2014 grade " + esc(SETTINGS.grade) + ". Same spot every day; teachers rotate.</p>";
-    const ct = classToday(new Date().getDay());
+    let body = '<div class="sub">Grade ' + esc(SETTINGS.grade) + " \u00b7 same spot daily</div>";
+    body += '<div class="big">' + esc(loc) + "</div>";
     if (ct && ct.teacher) {
-      body += '<p class="fri">Today\u2019s teacher: <b>' + esc(ct.teacher.name) + "</b> \u2014 " +
+      body += '<p class="fri"><b>Today:</b> ' + esc(ct.teacher.name) + " \u2014 " +
         esc(ct.teacher.lesson) + " \u00b7 " + esc(ct.teacher.text) + "</p>";
     } else if (ct && ct.friday) {
-      body += '<p class="fri">' + esc(ct.friday ? ct.note : "") + "</p>";
+      body += '<p class="fri"><b>Friday:</b> ' + esc(ct.note) + "</p>";
+    } else {
+      body += '<p class="fri">Bible classes run Mon\u2013Thu (Friday combines).</p>';
     }
-    host.appendChild(card("Your Bible class", body));
+    host.appendChild(card("Your Bible class", body, "feature"));
+  } else {
+    host.appendChild(card("Your Bible class",
+      "<p>Add your grade in setup to see your class location and today\u2019s rotating teacher.</p>" +
+      '<button class="primary" id="infoSetupBtn" style="margin-top:14px">Add my grade</button>'));
   }
 
-  // Junior / senior class locations
-  host.appendChild(card(CLASSES.junior.title, locList(CLASSES.junior.locations) +
-    teacherList(CLASSES.juniorTeachers) + note(CLASSES.juniorFriday)));
-  host.appendChild(card(CLASSES.senior.title, locList(CLASSES.senior.locations) +
-    teacherList(CLASSES.seniorTeachers) + note(CLASSES.seniorFriday)));
-  host.appendChild(card("Bible class \u2014 how it works", "<p>" + esc(CLASSES.note) + "</p>"));
+  // 2. Camp awards
+  host.appendChild(acc("Camp awards",
+    sect(INFO.honorCamper.title, ulPoints(INFO.honorCamper.points)) +
+    sect(INFO.hensel.title, ulPoints(INFO.hensel.points))));
 
-  // Camp awards
-  host.appendChild(card(INFO.honorCamper.title, ulPoints(INFO.honorCamper.points)));
-  host.appendChild(card(INFO.hensel.title, ulPoints(INFO.hensel.points)));
+  // 3. All Bible classes & teachers — the counselor's tier first
+  const jr = sect(CLASSES.junior.title, locList(CLASSES.junior.locations) +
+    teacherList(CLASSES.juniorTeachers, tier === "junior" ? todayName : "") + note(CLASSES.juniorFriday));
+  const sr = sect(CLASSES.senior.title, locList(CLASSES.senior.locations) +
+    teacherList(CLASSES.seniorTeachers, tier === "senior" ? todayName : "") + note(CLASSES.seniorFriday));
+  host.appendChild(acc("All Bible classes & teachers",
+    (tier === "senior" ? sr + jr : jr + sr) + sect("How it works", "<p>" + esc(CLASSES.note) + "</p>")));
 
-  // Theme days
-  let themes = "<ul class=\"kv\">";
+  // 4. Theme days & arrival
+  let themes = '<ul class="kv">';
   INFO.themes.forEach((t) => { themes += "<li><span>" + esc(t.day) + "</span><span>" + esc(t.theme) + "</span></li>"; });
   themes += "</ul>";
-  host.appendChild(card("Theme days", themes));
+  host.appendChild(acc("Theme days & arrival",
+    sect("Theme days", themes) + sect("Arrival", "<p>" + esc(INFO.arrivalFee) + "</p>")));
 
-  host.appendChild(card("Arrival", "<p>" + esc(INFO.arrivalFee) + "</p>"));
+  const sb = $("infoSetupBtn");
+  if (sb) sb.addEventListener("click", openSetup);
 }
 
-function card(title, bodyHtml) {
+function card(title, bodyHtml, cls) {
   const d = document.createElement("section");
-  d.className = "info-card";
+  d.className = "info-card" + (cls ? " " + cls : "");
   d.innerHTML = "<h4>" + esc(title) + "</h4>" + bodyHtml;
   return d;
+}
+function acc(title, bodyHtml, open) {
+  const d = document.createElement("details");
+  d.className = "acc";
+  if (open) d.open = true;
+  d.innerHTML = "<summary>" + esc(title) + "</summary><div class=\"acc-b\">" + bodyHtml + "</div>";
+  return d;
+}
+function sect(title, bodyHtml) {
+  return '<div class="sect"><h5>' + esc(title) + "</h5>" + bodyHtml + "</div>";
 }
 function locList(obj) {
   const seen = new Set();
@@ -459,10 +471,12 @@ function locList(obj) {
   });
   return html + "</ul>";
 }
-function teacherList(arr) {
+function teacherList(arr, todayName) {
   let html = "<div class=\"teachers\">";
   arr.forEach((t) => {
-    html += "<div class=\"tch\"><b>" + esc(t.name) + "</b><span>" + esc(t.start) + "</span><i>" +
+    const hot = todayName && t.name === todayName;
+    html += '<div class="tch' + (hot ? " now-tch" : "") + '"><b>' + esc(t.name) +
+      (hot ? " \u2022 today" : "") + "</b><span>" + esc(t.start) + "</span><i>" +
       esc(t.lesson) + " \u00b7 " + esc(t.text) + "</i></div>";
   });
   return html + "</div>";
@@ -522,7 +536,7 @@ function updateWho() {
   }
 }
 
-function sig(dow, cur, duties, tab) { return [dow, cur, duties, tab].join("|"); }
+function sig(dow, cur, tab) { return [dow, cur, tab].join("|"); }
 
 function tick() {
   const now = new Date();
@@ -530,7 +544,7 @@ function tick() {
   if (activeTab !== "now") return;
   const { dow, rows } = buildTimeline(dayBase(0));
   const cur = currentIndex(rows, now);
-  const s = sig(dow, cur, dutiesOnly, activeTab);
+  const s = sig(dow, cur, activeTab);
   if (s !== lastSig) { render(); return; }
   updateLive(rows, cur, now);
 }
@@ -549,21 +563,41 @@ function setTab(name) {
 }
 
 /* ----------------------------- Setup / settings ------------------------ */
-function buildSetup() {
-  const cab = $("setCabin");
-  cab.innerHTML = '<option value="">\u2014</option>' +
-    CABINS.map((c) => '<option value="' + c + '"' + (SETTINGS.cabin === c ? " selected" : "") + ">Cabin " + c + "</option>").join("");
-  const gr = $("setGrade");
-  gr.innerHTML = '<option value="">\u2014</option>' +
-    GRADES.map((g) => '<option value="' + g + '"' + (SETTINGS.grade === g ? " selected" : "") + ">" + ordinal(g) + "</option>").join("");
-  $("setSection").value = SETTINGS.section || "";
-  $("setRole").value = SETTINGS.role || "counselor";
-}
-
-function ordinal(n) {
+function ordinalShort(n) {
   const v = +n;
   const s = ["th", "st", "nd", "rd"], k = v % 100;
-  return v + (s[(k - 20) % 10] || s[k] || s[0]) + " grade";
+  return v + (s[(k - 20) % 10] || s[k] || s[0]);
+}
+
+/* single-select chip grid: clicking the active chip clears it */
+function chipGrid(host, items, selected, label, onPick) {
+  host.innerHTML = "";
+  items.forEach((it) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (selected === it ? " on" : "");
+    b.dataset.v = it;
+    b.textContent = label ? label(it) : it;
+    b.addEventListener("click", () => {
+      const next = onPick(it);
+      [...host.children].forEach((el) => el.classList.toggle("on", el.dataset.v === next));
+    });
+    host.appendChild(b);
+  });
+}
+
+function buildSetup() {
+  draft = { cabin: SETTINGS.cabin || "", section: SETTINGS.section || "", grade: SETTINGS.grade || "" };
+  chipGrid($("setCabin"), CABINS, draft.cabin, null, (c) => (draft.cabin = draft.cabin === c ? "" : c));
+  chipGrid($("setGrade"), GRADES, draft.grade, ordinalShort, (g) => (draft.grade = draft.grade === g ? "" : g));
+  const seg = $("setSection");
+  [...seg.children].forEach((el) => {
+    el.classList.toggle("on", el.dataset.v === draft.section);
+    el.onclick = () => {
+      draft.section = draft.section === el.dataset.v ? "" : el.dataset.v;
+      [...seg.children].forEach((s) => s.classList.toggle("on", s.dataset.v === draft.section));
+    };
+  });
 }
 
 function openSetup() {
@@ -580,15 +614,21 @@ function closeSetup() {
   }
 }
 function saveSetup() {
-  SETTINGS.cabin = $("setCabin").value;
-  SETTINGS.section = $("setSection").value;
-  SETTINGS.grade = $("setGrade").value;
-  SETTINGS.role = $("setRole").value || "counselor";
+  SETTINGS.cabin = draft.cabin;
+  SETTINGS.section = draft.section;
+  SETTINGS.grade = draft.grade;
+  SETTINGS.role = "counselor";
   SETTINGS.configured = true;
   const ok = saveSettings();
   closeSetup();
   render();
   toast(ok ? "Saved" : "Saved for this session only");
+}
+function skipSetup() {
+  SETTINGS.configured = true;
+  saveSettings();
+  closeSetup();
+  render();
 }
 
 /* -------------------------------- Edit sheet --------------------------- */
@@ -660,12 +700,6 @@ function wire() {
   });
 
   $("whoPill").addEventListener("click", openSetup);
-  $("dutiesToggle").addEventListener("click", (e) => {
-    dutiesOnly = !dutiesOnly;
-    e.currentTarget.setAttribute("aria-pressed", String(dutiesOnly));
-    render();
-  });
-
   $("openEdit").addEventListener("click", openEdit);
   $("bannerEdit").addEventListener("click", openEdit);
   $("sheetClose").addEventListener("click", closeEdit);
@@ -673,6 +707,7 @@ function wire() {
   $("resetBtn").addEventListener("click", resetTimes);
 
   $("setupSave").addEventListener("click", saveSetup);
+  $("setupSkip").addEventListener("click", skipSetup);
   $("setupClose").addEventListener("click", closeSetup);
 
   $("sheetBackdrop").addEventListener("click", () => { closeEdit(); closeSetup(); });
