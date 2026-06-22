@@ -10,7 +10,7 @@
  * hard-coded to a single cabin.
  * ------------------------------------------------------------------------- */
 
-export const STORAGE_KEY = "ctcc_times_v4";
+export const STORAGE_KEY = "ctcc_times_v5";
 export const SETTINGS_KEY = "ctcc_settings_v1";
 
 /* Selectable in the setup card */
@@ -20,7 +20,7 @@ export const GRADES = ["3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 export const DEFAULTS = {
   weekday: {
     rise: "07:00", devo: "07:30", breakfast: "08:00", sports: "09:00",
-    report: "11:00", bible: "11:30", lunch: "12:15", rest: "13:00",
+    report: "10:30", bible: "11:00", lunch: "12:00", rest: "13:00",
     reflection: "14:00", swim: "15:00", cabindevo: "16:15", getready: "17:00",
     supper: "18:00", worship: "19:30", porch: "21:30", backtocabins: "22:00",
     lights: "22:30",
