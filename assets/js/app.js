@@ -640,6 +640,7 @@ function buildEdit() {
     const div = document.createElement("div");
     div.className = "grp";
     let html = "<h4>" + g.title + "</h4>";
+    if (g.note) html += '<p class="grpnote">' + esc(g.note) + "</p>";
     g.ids.forEach((id) => {
       html += '<div class="trow"><label>' + g.labels[id] + "</label>" +
         '<input type="time" data-grp="' + g.key + '" data-id="' + id + '" value="' + TIMES[g.key][id] + '"></div>';

@@ -234,7 +234,7 @@ export const INFO = {
 /* Edit-panel grouping */
 export const GROUPS = [
   {
-    key: "weekday", title: "Weekday rhythm (Mon\u2013Thu)", ids: WEEKDAY_ORDER,
+    key: "weekday", title: "Weekday times", note: "Friday\u2019s Bible-block & evening times are fixed and shown on the schedule.", ids: WEEKDAY_ORDER,
     labels: {
       rise: "Rise & Shine", devo: "Morning devo", breakfast: "Breakfast",
       sports: "Sports", report: "Cabin report", bible: "Bible classes",
