@@ -10,7 +10,7 @@
  * hard-coded to a single cabin.
  * ------------------------------------------------------------------------- */
 
-export const STORAGE_KEY = "ctcc_times_v3";
+export const STORAGE_KEY = "ctcc_times_v4";
 export const SETTINGS_KEY = "ctcc_settings_v1";
 
 /* Selectable in the setup card */
@@ -20,14 +20,14 @@ export const GRADES = ["3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 export const DEFAULTS = {
   weekday: {
     rise: "07:00", devo: "07:30", breakfast: "08:00", sports: "09:00",
-    report: "10:30", bible: "11:00", lunch: "12:00", rest: "13:00",
+    report: "11:00", bible: "11:30", lunch: "12:15", rest: "13:00",
     reflection: "14:00", swim: "15:00", cabindevo: "16:15", getready: "17:00",
     supper: "18:00", worship: "19:30", porch: "21:30", backtocabins: "22:00",
     lights: "22:30",
   },
   sunday: {
-    reg: "15:00", supper: "18:00", welcome: "19:30", goodnight: "21:30",
-    backtocabins: "22:00", lights: "22:30",
+    church: "10:00", lunch: "11:45", meeting: "13:00", checkin: "16:00",
+    dinner: "18:30", activity: "20:00", backtocabins: "22:00",
   },
   saturday: { wake: "07:00", breakfast: "08:00", clean: "09:00", depart: "10:00" },
 };
@@ -68,14 +68,15 @@ export const RECUR = {
 export const DAY = {
   0: {
     name: "Sunday", theme: "Arrival day", special: "sunday",
-    order: ["reg", "supper", "welcome", "goodnight", "backtocabins", "lights"],
+    order: ["church", "lunch", "meeting", "checkin", "dinner", "activity", "backtocabins"],
     items: {
-      reg: { label: "Registration & arrival", detail: "Receive and settle your campers.", counselor: true, reason: "Receive campers" },
-      supper: { label: "Supper" },
-      welcome: { label: "Worship & camp kickoff", detail: "Joe Squiers welcome \u00b7 Britt theme \u00b7 Joe rules & staff \u00b7 Tim sports teams \u00b7 Chance & Lori GTGTKY game \u00b7 counselors set team names \u00b7 Katie team flags.", counselor: true, reason: "Set team names" },
-      goodnight: { label: "Back porch \u2014 sing & goodnight", detail: "Then split to meet with Lori & Chance." },
-      backtocabins: { label: "Back to cabins" },
-      lights: { label: "Lights out" },
+      church: { label: "Sunday morning worship", detail: "Travis Peak Church of Christ, 10am. You do not have to dress up." },
+      lunch: { label: "Lunch", detail: "Mess Hall. Staff & kids pay $5 for lunch plus a $10/night overnight fee per person." },
+      meeting: { label: "Camp meeting", detail: "Led by Joe Squiers, right after lunch.", counselor: true, reason: "Camp meeting" },
+      checkin: { label: "Camper check-in", detail: "Counselors: be in your cabin. Non-counseling staff: help with check-in at the mess hall.", counselor: true, reason: "Receive campers" },
+      dinner: { label: "Dinner", detail: "Mess Hall." },
+      activity: { label: "Worship & evening activity", detail: "GTGYKY game \u2014 activity leaders are the non-counseling staff." },
+      backtocabins: { label: "Back to cabins", detail: "After the activity: Sr. girls \u2192 quad breezeway (Lori); Sr. boys \u2192 back porch (Scott)." },
     },
   },
   1: {
@@ -130,9 +131,9 @@ export const DAY = {
       lunch: { detail: "Kitchen help: Cabins A, 3." },
       supper: { detail: "Kitchen help: Cabins G, 4." },
       worship: { label: "Worship & Whiffle Ball", detail: "Britt intro \u00b7 Harrison song-leading \u00b7 Daniel Odiorne \u201cFish Out of Water\u201d \u00b7 all umps & coaches. Honor Camper: campers drop names in the box." },
-      porch: { detail: "Back & front porch devo. Snack: Coke + Pop Ice." },
+      porch: { detail: "Back: Jonny Royal \u00b7 Front: Brady Vann. Snack: Coke + Pop Ice." },
     },
-    note: "Mr. & Miss Hensel nominations from each cabin due tonight.",
+    note: "Mr. & Miss Hensel nominations from each cabin due to Chance & Lori before supper tonight.",
   },
   5: {
     name: "Friday", theme: "School colors day",
@@ -187,7 +188,7 @@ export const CLASSES = {
 
 /* General reference shown on the Info tab */
 export const INFO = {
-  arrivalFee: "Bringing a camper? Fee is due at registration: $15/night. Campers & RVs must be pre-approved.",
+  arrivalFee: "On arrival (Sunday): staff & kids pay $5 for lunch plus a $10/night overnight fee per person. Bringing a camper trailer/RV is $15/night and must be pre-approved.",
   honorCamper: {
     title: "Honor Camper",
     points: [
@@ -233,10 +234,11 @@ export const GROUPS = [
   },
   {
     key: "sunday", title: "Sunday \u2014 arrival",
-    ids: ["reg", "supper", "welcome", "goodnight", "backtocabins", "lights"],
+    ids: ["church", "lunch", "meeting", "checkin", "dinner", "activity", "backtocabins"],
     labels: {
-      reg: "Registration", supper: "Supper", welcome: "Kickoff",
-      goodnight: "Porch goodnight", backtocabins: "Back to cabins", lights: "Lights out",
+      church: "Morning worship", lunch: "Lunch", meeting: "Camp meeting",
+      checkin: "Camper check-in", dinner: "Dinner", activity: "Evening activity",
+      backtocabins: "Back to cabins",
     },
   },
   {

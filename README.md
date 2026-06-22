@@ -8,8 +8,9 @@ Each counselor sets their **cabin, section, and grade** once; the app then
 personalizes everything (kitchen shifts, bathhouse crew, devo nights, your Bible
 class location). Nothing is hard-coded to a single cabin.
 
-Built from the official C.T.C.C. weekday schedule (ctccamp.org). Sunday (arrival)
-and Saturday (checkout) times are estimates and are editable in-app.
+Built from the official C.T.C.C. schedule (ctccamp.org). Weekday and Sunday
+(arrival) times are the published schedule; only the Saturday checkout times
+after breakfast are estimates. All times are editable in-app.
 
 ## Highlights
 
@@ -20,7 +21,8 @@ and Saturday (checkout) times are estimates and are editable in-app.
   targets, a sticky live clock, and a floating "jump to now" button.
 - **Better UX** — four tabs: **Now** (live), **Week** (browse all 7 days),
   **Mine** (your duties across the week), and **Info** (Bible-class locations,
-  teacher rotations, awards rules, theme days). Plus a "my duties only" filter,
+  teacher rotations incl. **who teaches your class today**, awards rules, theme
+  days). Plus a "my duties only" filter,
   progress indicators, an editable-times bottom sheet, and light/dark themes.
 
 ## Run locally
