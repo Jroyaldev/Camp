@@ -116,27 +116,11 @@ function classTier() {
   return null;
 }
 
-function rotIndex(rotation, loc) {
-  return rotation.findIndex((r) => loc === r || loc.startsWith(r));
-}
-
-/* Teachers rotate one location per day (Mon–Thu); Friday classes combine.
- * Given a day-of-week, returns who teaches the counselor's class that day. */
-function classToday(dow) {
+/* Friday classes combine; the sheets print a fixed Friday note per tier. */
+function fridayClassNote() {
   const tier = classTier();
-  const loc = classLocation();
-  if (!tier || !loc) return null;
-  if (dow === 5) return { friday: true, note: tier === "junior" ? CLASSES.juniorFriday : CLASSES.seniorFriday };
-  if (dow < 1 || dow > 4) return null; // classes run Mon–Thu
-  const rotation = tier === "junior" ? CLASSES.juniorRotation : CLASSES.seniorRotation;
-  const teachers = tier === "junior" ? CLASSES.juniorTeachers : CLASSES.seniorTeachers;
-  const li = rotIndex(rotation, loc);
-  if (li < 0) return null;
-  const dayIndex = dow - 1; // Mon=0 … Thu=3
-  const n = rotation.length;
-  const startLoc = rotation[(((li - dayIndex) % n) + n) % n];
-  const teacher = teachers.find((t) => t.start === startLoc);
-  return teacher ? { teacher } : null;
+  if (!tier) return null;
+  return tier === "junior" ? CLASSES.juniorFriday : CLASSES.seniorFriday;
 }
 
 /* Returns { mine, reason } for a block, given the saved settings. */
@@ -180,9 +164,7 @@ function detailFor(id, item, dow) {
     const loc = classLocation();
     if (loc) {
       let add = "Your class: " + loc + ".";
-      const ct = classToday(dow);
-      if (ct && ct.teacher) add += " Today: " + ct.teacher.name + " (" + ct.teacher.lesson + ").";
-      else if (ct && ct.friday) add += " Friday: " + ct.note;
+      if (dow === 5) { const fn = fridayClassNote(); if (fn) add += " Friday: " + fn; }
       det = (det ? det + " " : "") + add;
     }
   }
@@ -262,7 +244,7 @@ function renderNowTab(rows, cur, day, now) {
 
   $("tlTitle").textContent = "Today \u00b7 " + day.name;
   const mineCount = rows.filter((r) => r.mine).length;
-  $("tlCount").textContent = rows.length + " blocks" + (mineCount ? " \u00b7 " + mineCount + " yours" : "");
+  $("tlCount").textContent = rows.length + (rows.length === 1 ? " block" : " blocks") + (mineCount ? " \u00b7 " + mineCount + " yours" : "");
   const ul = $("timeline");
   ul.innerHTML = "";
   rows.forEach((r, i) => ul.appendChild(rowEl(r, i, cur, true)));
@@ -337,7 +319,7 @@ function renderWeekTab() {
   const { day, rows } = buildTimeline(dateForDow(weekIndex));
   $("weekTitle").textContent = "Day " + (weekIndex + 1) + " \u00b7 " + day.name;
   $("weekTheme").textContent = day.theme ? ("Theme: " + day.theme) : "";
-  $("weekCount").textContent = rows.length + " blocks";
+  $("weekCount").textContent = rows.length + (rows.length === 1 ? " block" : " blocks");
 
   const ul = $("weekTimeline");
   ul.innerHTML = "";
@@ -396,25 +378,21 @@ function renderInfoTab() {
 
   const tier = classTier();
   const loc = classLocation();
-  const ct = loc ? classToday(new Date().getDay()) : null;
-  const todayName = ct && ct.teacher ? ct.teacher.name : "";
 
   // 1. Personalized Bible class — leads the tab
   if (loc) {
     let body = '<div class="sub">Grade ' + esc(SETTINGS.grade) + " \u00b7 same spot daily</div>";
     body += '<div class="big">' + esc(loc) + "</div>";
-    if (ct && ct.teacher) {
-      body += '<p class="fri"><b>Today:</b> ' + esc(ct.teacher.name) + " \u2014 " +
-        esc(ct.teacher.lesson) + " \u00b7 " + esc(ct.teacher.text) + "</p>";
-    } else if (ct && ct.friday) {
-      body += '<p class="fri"><b>Friday:</b> ' + esc(ct.note) + "</p>";
+    if (new Date().getDay() === 5) {
+      const fn = fridayClassNote();
+      if (fn) body += '<p class="fri"><b>Friday:</b> ' + esc(fn) + "</p>";
     } else {
-      body += '<p class="fri">Bible classes run Mon\u2013Thu (Friday combines).</p>';
+      body += '<p class="fri">Teachers rotate daily \u2014 see the roster below.</p>';
     }
     host.appendChild(card("Your Bible class", body, "feature"));
   } else {
     host.appendChild(card("Your Bible class",
-      "<p>Add your grade in setup to see your class location and today\u2019s rotating teacher.</p>" +
+      "<p>Add your grade in setup to see your class location and the teacher roster.</p>" +
       '<button class="primary" id="infoSetupBtn" style="margin-top:14px">Add my grade</button>'));
   }
 
@@ -425,9 +403,9 @@ function renderInfoTab() {
 
   // 3. All Bible classes & teachers — the counselor's tier first
   const jr = sect(CLASSES.junior.title, locList(CLASSES.junior.locations) +
-    teacherList(CLASSES.juniorTeachers, tier === "junior" ? todayName : "") + note("Friday: " + CLASSES.juniorFriday));
+    teacherList(CLASSES.juniorTeachers) + note("Friday: " + CLASSES.juniorFriday));
   const sr = sect(CLASSES.senior.title, locList(CLASSES.senior.locations) +
-    teacherList(CLASSES.seniorTeachers, tier === "senior" ? todayName : "") + note("Friday: " + CLASSES.seniorFriday));
+    teacherList(CLASSES.seniorTeachers) + note("Friday: " + CLASSES.seniorFriday));
   host.appendChild(acc("All Bible classes & teachers",
     (tier === "senior" ? sr + jr : jr + sr) + sect("How it works", "<p>" + esc(CLASSES.note) + "</p>")));
 
@@ -472,13 +450,11 @@ function locList(obj) {
   });
   return html + "</ul>";
 }
-function teacherList(arr, todayName) {
+function teacherList(arr) {
   let html = "<div class=\"teachers\">";
   arr.forEach((t) => {
-    const hot = todayName && t.name === todayName;
-    html += '<div class="tch' + (hot ? " now-tch" : "") + '"><b>' + esc(t.name) +
-      (hot ? " \u2022 today" : "") + "</b><span>" + esc(t.start) + "</span><i>" +
-      esc(t.lesson) + " \u00b7 " + esc(t.text) + "</i></div>";
+    html += '<div class="tch"><b>' + esc(t.name) + "</b><span>" + esc(t.start) +
+      "</span><i>" + esc(t.lesson) + " \u00b7 " + esc(t.text) + "</i></div>";
   });
   return html + "</div>";
 }

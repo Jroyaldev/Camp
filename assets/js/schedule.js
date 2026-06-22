@@ -1,9 +1,11 @@
 /* ---------------------------------------------------------------------------
  * C.T.C.C. camp schedule data
- * Source: official C.T.C.C. daily schedule (ctccamp.org). Sunday, Mon\u2013Thu and
- * Friday times are published; Friday runs later (report/Bible/lunch) and ends with
- * Awards + Bonfire instead of worship. Saturday (checkout) times after breakfast
- * are estimates. All weekday times are editable in the app.
+ * Source: official C.T.C.C. daily schedule (ctccamp.org) and the Bible-class
+ * sheets. Every time, duty, speaker, lesson and text below is taken directly
+ * from those sources — nothing is estimated, computed, or paraphrased. Friday
+ * runs later (report/Bible/lunch) and ends with Awards + Bonfire instead of
+ * worship. Saturday lists only breakfast (8:00); checkout has no other printed
+ * times. All weekday times are editable in the app.
  *
  * Personalization is data-driven: each weekday carries an `assign` map of which
  * cabins are on kitchen / bathhouse / devo duty, and items can flag a generic
@@ -31,7 +33,7 @@ export const DEFAULTS = {
     church: "10:00", lunch: "11:45", meeting: "13:00", checkin: "16:00",
     dinner: "18:30", activity: "20:00", backtocabins: "22:00",
   },
-  saturday: { wake: "07:00", breakfast: "08:00", clean: "09:00", depart: "10:00" },
+  saturday: { breakfast: "08:00" },
 };
 
 export const WEEKDAY_ORDER = [
@@ -93,7 +95,6 @@ export const DAY = {
       worship: { label: "Worship & Song Fest (Mess Hall)", detail: "Harrison, Blan, Joe, Joe Braden & Morgan. Counselors set tables & chairs after dinner." },
       porch: { detail: "Back: Jake Agin \u00b7 Front: Kyle Lane. Snack: Coke + Chex Mix." },
     },
-    note: "Hand out & collect talent-night slips.",
   },
   2: {
     name: "Tuesday", theme: "Neon day",
@@ -107,7 +108,6 @@ export const DAY = {
       worship: { label: "Worship & Staff Skits", detail: "Britt intro \u00b7 Blan singing \u00b7 Matt Parker \u201cWhen Jesus Catches a Fisherman\u201d \u00b7 Skit DJs: Matt, Daniel, Korey, Katie." },
       porch: { detail: "Back: Jake Petty \u00b7 Front: Jackson Melching. Snack: Coke + Goldfish & cheese crackers." },
     },
-    note: "Camper talent list due to Chance & Lori by supper.",
   },
   3: {
     name: "Wednesday", theme: "Hawaiian",
@@ -121,7 +121,6 @@ export const DAY = {
       worship: { label: "Worship & Talent Show", detail: "Joe intro \u00b7 talents: Breyson, Joe Braden, Emilee, Addie \u00b7 Britt/Blan (Hey Radio & I AM)." },
       porch: { detail: "Back: Morgan Craig \u00b7 Front: Adam Payne. Snack: Coke + granola bar." },
     },
-    note: "Ops crew runs cable & stacks bonfire wood today.",
   },
   4: {
     name: "Thursday", theme: "Patriotic day",
@@ -135,7 +134,6 @@ export const DAY = {
       worship: { label: "Worship & Whiffle Ball", detail: "Britt intro \u00b7 Harrison song-leading \u00b7 Daniel Odiorne \u201cFish Out of Water\u201d \u00b7 all umps & coaches. Honor Camper: counselors drop names in the box." },
       porch: { detail: "Back: Jonny Royal \u00b7 Front: Brady Vann. Snack: Coke + Pop Ice." },
     },
-    note: "Mr. & Miss Hensel nominations from each cabin due to Chance & Lori before supper tonight.",
   },
   5: {
     name: "Friday", theme: "School colors day",
@@ -159,17 +157,13 @@ export const DAY = {
       porch: { detail: "Back/front porch \u2014 Squiers. Snack: Coke + remaining food." },
       lights: { detail: "Lights out \u2014 pack the trailers with all kitchen/cafeteria items at this time." },
     },
-    note: "Tear-down begins: swim gear pulled, kitchen & porches packed.",
   },
   6: {
     name: "Saturday", theme: "Whatever clean you have left", special: "saturday",
-    order: ["wake", "breakfast", "clean", "depart"],
-    assign: { bathhouse: "C", breakfast: ["E", "2", "5"] },
+    order: ["breakfast"],
+    assign: { breakfast: ["E", "2", "5"] },
     items: {
-      wake: { label: "Pack & clean cabin", detail: "Before 8:00 breakfast. Don't release anyone until your cabin is checked off by Chance or Lori.", counselor: true, reason: "Pack & clean" },
-      breakfast: { label: "Breakfast", detail: "After your cabin's cleared. Kitchen help: Cabins E, 2, 5." },
-      clean: { label: "Final clean & load cars", detail: "Cabins & bathhouse done; kitchen & dining finish before campers are released.", counselor: true, reason: "Final clean" },
-      depart: { label: "Camper departures", detail: "You leave only after your campers go and the head counselor releases you.", counselor: true, reason: "Departures" },
+      breakfast: { label: "Breakfast", detail: "Kitchen help: Cabins E, 2, 5." },
     },
   },
 };
@@ -180,8 +174,6 @@ export const CLASSES = {
   note: "Each grade goes to the same location every day for Bible class \u2014 teachers rotate daily. All counseling staff attend class; divide up so each group has adequate staff.",
   junior: { title: "Junior class (3rd\u20137th)", locations: { "3": "Back Porch", "4": "Back Porch", "5": "Front Porch", "6": "Cabin G", "7": "Cafeteria" } },
   senior: { title: "Senior class (8th\u201312th)", locations: { "8": "Whataburger A (by the girls quad cabin)", "9": "Whataburger B (closer to the creek)", "10": "Cabin 5", "11": "Quad Breezeway", "12": "Quad Breezeway" } },
-  juniorRotation: ["Back Porch", "Front Porch", "Cabin G", "Cafeteria"],
-  seniorRotation: ["Whataburger A", "Whataburger B", "Cabin 5", "Quad Breezeway"],
   juniorTeachers: [
     { name: "Joe Braden Squiers", start: "Back Porch", lesson: "Called Before Changed", text: "Mark 1:16-20" },
     { name: "Breyson Farmer", start: "Front Porch", lesson: "God Works While We Wait", text: "Mark 4:26-29" },
@@ -255,7 +247,7 @@ export const GROUPS = [
   },
   {
     key: "saturday", title: "Saturday \u2014 checkout",
-    ids: ["wake", "breakfast", "clean", "depart"],
-    labels: { wake: "Pack & clean", breakfast: "Breakfast", clean: "Final clean", depart: "Departures" },
+    ids: ["breakfast"],
+    labels: { breakfast: "Breakfast" },
   },
 ];
