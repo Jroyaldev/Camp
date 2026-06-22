@@ -108,6 +108,37 @@ function classLocation() {
   return null;
 }
 
+function classTier() {
+  const g = SETTINGS.grade;
+  if (!g) return null;
+  if (CLASSES.junior.locations[g]) return "junior";
+  if (CLASSES.senior.locations[g]) return "senior";
+  return null;
+}
+
+function rotIndex(rotation, loc) {
+  return rotation.findIndex((r) => loc === r || loc.startsWith(r));
+}
+
+/* Teachers rotate one location per day (Mon–Thu); Friday classes combine.
+ * Given a day-of-week, returns who teaches the counselor's class that day. */
+function classToday(dow) {
+  const tier = classTier();
+  const loc = classLocation();
+  if (!tier || !loc) return null;
+  if (dow === 5) return { friday: true, note: tier === "junior" ? CLASSES.juniorFriday : CLASSES.seniorFriday };
+  if (dow < 1 || dow > 4) return null; // classes run Mon–Thu
+  const rotation = tier === "junior" ? CLASSES.juniorRotation : CLASSES.seniorRotation;
+  const teachers = tier === "junior" ? CLASSES.juniorTeachers : CLASSES.seniorTeachers;
+  const li = rotIndex(rotation, loc);
+  if (li < 0) return null;
+  const dayIndex = dow - 1; // Mon=0 … Thu=3
+  const n = rotation.length;
+  const startLoc = rotation[(((li - dayIndex) % n) + n) % n];
+  const teacher = teachers.find((t) => t.start === startLoc);
+  return teacher ? { teacher } : null;
+}
+
 /* Returns { mine, reason } for a block, given the saved settings. */
 function dutyFor(id, day, item) {
   const cabin = SETTINGS.cabin;
@@ -143,11 +174,17 @@ function labelFor(id, item) {
   return label;
 }
 
-function detailFor(id, item) {
+function detailFor(id, item, dow) {
   let det = (item && item.detail) || (RECUR[id] && RECUR[id].detail) || "";
   if (id === "bible") {
     const loc = classLocation();
-    if (loc) det = (det ? det + " " : "") + "Your class: " + loc + ".";
+    if (loc) {
+      let add = "Your class: " + loc + ".";
+      const ct = classToday(dow);
+      if (ct && ct.teacher) add += " Today: " + ct.teacher.name + " (" + ct.teacher.lesson + ").";
+      else if (ct && ct.friday) add += " Friday: all classes combine.";
+      det = (det ? det + " " : "") + add;
+    }
   }
   return det;
 }
@@ -161,13 +198,13 @@ function buildTimeline(base) {
     d.order.forEach((id) => {
       const item = (d.items && d.items[id]) || {};
       const du = dutyFor(id, d, item);
-      rows.push({ id, start: toDate(base, tt[id]), label: item.label || id, detail: detailFor(id, item), mine: du.mine, reason: du.reason });
+      rows.push({ id, start: toDate(base, tt[id]), label: item.label || id, detail: detailFor(id, item, dow), mine: du.mine, reason: du.reason });
     });
   } else {
     WEEKDAY_ORDER.forEach((id) => {
       const item = d.items && d.items[id];
       const du = dutyFor(id, d, item);
-      rows.push({ id, start: toDate(base, TIMES.weekday[id]), label: labelFor(id, item), detail: detailFor(id, item), mine: du.mine, reason: du.reason });
+      rows.push({ id, start: toDate(base, TIMES.weekday[id]), label: labelFor(id, item), detail: detailFor(id, item, dow), mine: du.mine, reason: du.reason });
     });
   }
   rows.sort((a, b) => a.start - b.start);
@@ -371,8 +408,15 @@ function renderInfoTab() {
 
   const loc = classLocation();
   if (loc) {
-    host.appendChild(card("Your Bible class",
-      "<p><b>" + esc(loc) + "</b> \u2014 grade " + esc(SETTINGS.grade) + ". Same spot every day; teachers rotate.</p>"));
+    let body = "<p><b>" + esc(loc) + "</b> \u2014 grade " + esc(SETTINGS.grade) + ". Same spot every day; teachers rotate.</p>";
+    const ct = classToday(new Date().getDay());
+    if (ct && ct.teacher) {
+      body += '<p class="fri">Today\u2019s teacher: <b>' + esc(ct.teacher.name) + "</b> \u2014 " +
+        esc(ct.teacher.lesson) + " \u00b7 " + esc(ct.teacher.text) + "</p>";
+    } else if (ct && ct.friday) {
+      body += '<p class="fri">' + esc(ct.friday ? ct.note : "") + "</p>";
+    }
+    host.appendChild(card("Your Bible class", body));
   }
 
   // Junior / senior class locations
