@@ -1,5 +1,5 @@
 /* C.T.C.C. camp companion · service worker — offline-first for a low-signal camp. */
-const CACHE = "ctcc-camp-v6";
+const CACHE = "ctcc-camp-v7";
 
 const ASSETS = [
   "./",
