@@ -1,5 +1,5 @@
-/* Cabin F · service worker — offline-first for a low-signal camp. */
-const CACHE = "cabin-f-v1";
+/* C.T.C.C. camp companion · service worker — offline-first for a low-signal camp. */
+const CACHE = "ctcc-camp-v2";
 
 const ASSETS = [
   "./",

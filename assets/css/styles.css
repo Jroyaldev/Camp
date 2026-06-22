@@ -59,7 +59,7 @@ body {
 .wrap {
   max-width: 600px;
   margin: 0 auto;
-  padding: 0 16px calc(96px + var(--safe-b));
+  padding: 0 16px calc(120px + var(--safe-b));
 }
 
 .eyebrow {
@@ -77,11 +77,22 @@ body {
   top: 0;
   z-index: 20;
   background: var(--paper);
-  padding: calc(14px + var(--safe-t)) 0 12px;
+  padding: calc(14px + var(--safe-t)) 16px 12px;
   border-bottom: 2px solid var(--ink);
   margin-bottom: 6px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
+.cbrow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .clock { display: flex; align-items: baseline; gap: 10px; }
+.who {
+  flex: 0 0 auto; align-self: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  background: var(--cedar); color: #fff; border: 0; border-radius: 99px;
+  min-height: 36px; padding: 0 14px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.who.unset { background: var(--clay); }
 .clock .time {
   font-family: var(--serif);
   font-weight: 800;
@@ -113,46 +124,34 @@ body {
 .dayprogress { height: 4px; background: var(--line); border-radius: 99px; margin-top: 12px; overflow: hidden; }
 .dayprogress > span { display: block; height: 100%; background: var(--cedar); border-radius: 99px; transition: width .6s ease; }
 
-/* ----------------------------- Controls -------------------------------- */
-.controls { display: flex; gap: 8px; margin: 14px 0 2px; align-items: center; }
-.daynav {
-  display: flex; align-items: center; gap: 2px;
-  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-}
-.daynav button {
-  min-width: var(--tap); height: var(--tap);
-  border: 0; background: transparent; color: var(--ink);
-  font-size: 20px; cursor: pointer; border-radius: 10px;
-  display: grid; place-items: center;
-  -webkit-tap-highlight-color: transparent;
-}
-.daynav button:active { background: var(--line); }
-.daynav .label {
-  font-family: var(--mono); font-size: 12px; font-weight: 700;
-  padding: 0 4px; min-width: 88px; text-align: center;
-}
+/* ------------------------------- Panels -------------------------------- */
+.panel { display: none; }
+.panel.on { display: block; }
+
+.controls { display: flex; gap: 8px; margin: 18px 0 2px; align-items: center; }
 .toggle {
-  margin-left: auto;
   display: inline-flex; align-items: center; gap: 8px;
   min-height: var(--tap); padding: 0 14px;
   background: var(--card); border: 1px solid var(--line); border-radius: 10px;
   font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--taupe);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
-  letter-spacing: .04em;
+  letter-spacing: .04em; flex: 0 0 auto;
 }
 .toggle[aria-pressed="true"] { background: var(--clay-tint); border-color: var(--clay-line); color: var(--clay); }
 .toggle .dot { width: 9px; height: 9px; border-radius: 99px; background: var(--clay); opacity: .35; }
 .toggle[aria-pressed="true"] .dot { opacity: 1; }
 
-.preview-exit {
-  display: none;
-  width: 100%; margin: 12px 0 0;
-  min-height: var(--tap);
-  background: var(--clay); color: #fff; border: 0; border-radius: 10px;
-  font-family: var(--mono); font-size: 13px; font-weight: 700; cursor: pointer;
-  letter-spacing: .04em;
+/* day chips on the Week tab */
+.chips { display: flex; gap: 7px; overflow-x: auto; padding: 16px 0 4px; -webkit-overflow-scrolling: touch; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: 0 0 auto; min-height: 38px; padding: 0 14px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 99px;
+  font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--taupe);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.preview-exit.show { display: block; }
+.chip.today { border-color: var(--cedar); color: var(--cedar); }
+.chip.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 
 /* ----------------------------- Banner ---------------------------------- */
 .banner {
@@ -211,9 +210,10 @@ body {
 .next .in { font-family: var(--mono); font-size: 12px; color: var(--taupe); margin-top: 2px; }
 
 /* ------------------------------ Timeline ------------------------------- */
-.tl-head { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 10px; }
-.tl-head h3 { font-family: var(--serif); font-weight: 700; font-size: 18px; margin: 0; }
-.tl-head .count { font-family: var(--mono); font-size: 11px; color: var(--taupe); margin-left: auto; }
+.tl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 24px 0 10px; }
+.tl-head > div { min-width: 0; }
+.tl-head h3 { font-family: var(--serif); font-weight: 700; font-size: 18px; margin: 2px 0 0; }
+.tl-head .count { font-family: var(--mono); font-size: 11px; color: var(--taupe); display: inline-block; margin-right: 10px; }
 .tl {
   list-style: none; margin: 0; padding: 0;
   background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
@@ -240,7 +240,7 @@ body {
 
 /* --------------------------- Jump-to-now FAB --------------------------- */
 .fab {
-  position: fixed; right: calc(16px + var(--safe-r)); bottom: calc(18px + var(--safe-b));
+  position: fixed; right: calc(16px + var(--safe-r)); bottom: calc(78px + var(--safe-b));
   z-index: 30; display: none; align-items: center; gap: 8px;
   min-height: var(--tap); padding: 0 18px;
   background: var(--ink); color: var(--paper); border: 0; border-radius: 99px;
@@ -294,7 +294,7 @@ body {
 
 /* ------------------------------- Toast --------------------------------- */
 .toast {
-  position: fixed; left: 50%; bottom: calc(80px + var(--safe-b)); transform: translate(-50%, 20px);
+  position: fixed; left: 50%; bottom: calc(86px + var(--safe-b)); transform: translate(-50%, 20px);
   z-index: 50; background: var(--ink); color: var(--paper);
   font-family: var(--mono); font-size: 13px; padding: 10px 16px; border-radius: 10px;
   opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
@@ -305,6 +305,82 @@ body {
 footer {
   margin-top: 26px; font-family: var(--mono); font-size: 11px; color: var(--taupe);
   line-height: 1.7; text-align: center;
+}
+
+/* ------------------------------ Tab bar -------------------------------- */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+  display: flex; background: var(--card);
+  border-top: 1px solid var(--line);
+  padding-bottom: var(--safe-b);
+  box-shadow: 0 -4px 18px rgba(0,0,0,.06);
+}
+.tabbar button {
+  flex: 1; border: 0; background: transparent; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 9px 0 8px; color: var(--taupe);
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  -webkit-tap-highlight-color: transparent;
+}
+.tabbar button .ti { font-size: 18px; line-height: 1; }
+.tabbar button.on { color: var(--cedar); }
+
+/* reason badge inside timeline rows */
+.rbadge {
+  display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .04em; color: var(--clay); background: var(--clay-tint);
+  border: 1px solid var(--clay-line); border-radius: 6px; padding: 1px 6px; margin-left: 7px;
+  vertical-align: 1px;
+}
+
+/* ------------------------------ Mine tab ------------------------------- */
+.mineday { margin-top: 18px; }
+.mineday:first-child { margin-top: 8px; }
+.mineday h4 {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--cedar); margin: 0 0 8px;
+}
+.mineday ul { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--clay-line); border-radius: 14px; overflow: hidden; }
+.mineday li { display: grid; grid-template-columns: 62px 1fr; gap: 12px; padding: 13px 15px; border-top: 1px solid var(--line); }
+.mineday li:first-child { border-top: 0; }
+.mineday .t { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--clay); }
+.mineday .m b { font-weight: 600; font-size: 15px; }
+.mineday .m .dt { display: block; font-size: 13px; color: var(--taupe); margin-top: 3px; line-height: 1.4; }
+
+.prompt { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px; text-align: center; margin-top: 12px; }
+.prompt p { font-size: 14px; line-height: 1.55; color: var(--taupe); margin: 0 0 16px; }
+.prompt .primary, .primary {
+  font-family: var(--mono); font-size: 14px; font-weight: 700; color: #fff; background: var(--cedar);
+  border: 0; border-radius: 10px; min-height: var(--tap); padding: 0 22px; cursor: pointer;
+}
+
+/* ------------------------------ Info tab ------------------------------- */
+.info-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin-top: 14px; }
+.info-card:first-child { margin-top: 8px; }
+.info-card h4 { font-family: var(--serif); font-weight: 700; font-size: 17px; margin: 0 0 10px; }
+.info-card p { font-size: 14px; line-height: 1.55; margin: 8px 0 0; color: var(--ink); }
+.info-card .fri { font-size: 13px; color: var(--cedar); background: var(--cedar-tint); border-radius: 9px; padding: 9px 11px; margin-top: 12px; }
+.kv { list-style: none; margin: 0; padding: 0; }
+.kv li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.kv li:first-child { border-top: 0; }
+.kv li span:first-child { color: var(--taupe); }
+.kv li span:last-child { font-weight: 600; text-align: right; }
+.teachers { margin-top: 12px; display: grid; gap: 10px; }
+.tch { border-left: 3px solid var(--cedar); padding-left: 10px; }
+.tch b { display: block; font-size: 14px; }
+.tch span { font-family: var(--mono); font-size: 11px; color: var(--cedar); }
+.tch i { display: block; font-style: normal; font-size: 13px; color: var(--taupe); margin-top: 2px; }
+.pts { margin: 0; padding-left: 18px; }
+.pts li { font-size: 14px; line-height: 1.5; margin-bottom: 5px; }
+
+/* ----------------------------- Setup form ------------------------------ */
+.hint { font-size: 13px; color: var(--taupe); margin: 6px 0 14px; line-height: 1.5; }
+.frow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+.frow:first-of-type { border-top: 0; }
+.frow label { font-size: 14px; }
+.frow select {
+  font-family: var(--sans); font-size: 15px; border: 1px solid var(--line); border-radius: 8px;
+  padding: 9px 11px; background: var(--card-2); color: var(--ink); min-height: var(--tap); min-width: 150px;
 }
 
 @media (prefers-reduced-motion: reduce) {

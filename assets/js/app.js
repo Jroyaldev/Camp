@@ -1,16 +1,17 @@
 import {
-  STORAGE_KEY, DEFAULTS, WEEKDAY_ORDER, GEN, RECUR, DAY, GROUPS,
+  STORAGE_KEY, SETTINGS_KEY, CABINS, GRADES, DEFAULTS, WEEKDAY_ORDER,
+  GEN, RECUR, DAY, CLASSES, INFO, GROUPS,
 } from "./schedule.js";
 
 /* ----------------------------- State / storage ------------------------- */
 let TIMES = loadTimes();
-let viewOffset = 0;        // 0 = today (live); +/- previews other days
+let SETTINGS = loadSettings();
+let activeTab = "now";
+let weekIndex = new Date().getDay();   // selected day on the Week tab
 let dutiesOnly = false;
-let lastSig = "";          // signature to detect when a full re-render is needed
+let lastSig = "";
 
-function deepDefaults() {
-  return JSON.parse(JSON.stringify(DEFAULTS));
-}
+function deepDefaults() { return JSON.parse(JSON.stringify(DEFAULTS)); }
 
 function loadTimes() {
   try {
@@ -23,19 +24,31 @@ function loadTimes() {
         saturday: { ...DEFAULTS.saturday, ...(p.saturday || {}) },
       };
     }
-  } catch (e) {
-    /* corrupt or unavailable storage — fall back to defaults */
-  }
+  } catch (e) { /* corrupt or unavailable storage — fall back to defaults */ }
   return deepDefaults();
 }
 
 function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(TIMES)); return true; }
+  catch (e) { return false; }
+}
+
+function loadSettings() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(TIMES));
-    return true;
-  } catch (e) {
-    return false;
-  }
+    const p = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    if (p && typeof p === "object") {
+      return {
+        cabin: p.cabin || "", section: p.section || "", grade: p.grade || "",
+        role: p.role || "counselor", configured: !!p.configured,
+      };
+    }
+  } catch (e) { /* ignore */ }
+  return { cabin: "", section: "", grade: "", role: "counselor", configured: false };
+}
+
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); return true; }
+  catch (e) { return false; }
 }
 
 /* ------------------------------- Time helpers -------------------------- */
@@ -49,36 +62,6 @@ function toDate(base, hhmm) {
   return d;
 }
 
-function mergeItem(base, ov) {
-  if (!ov) return;
-  ["label", "detail", "mine"].forEach((k) => {
-    if (ov[k] !== undefined) base[k] = ov[k];
-  });
-}
-
-function buildTimeline(base) {
-  const dow = base.getDay();
-  const d = DAY[dow];
-  const rows = [];
-  if (d.special) {
-    const tt = TIMES[d.special];
-    d.order.forEach((id) => {
-      const it = { label: id, detail: "", mine: false };
-      mergeItem(it, d.items[id]);
-      rows.push({ start: toDate(base, tt[id]), label: it.label, detail: it.detail, mine: it.mine });
-    });
-  } else {
-    WEEKDAY_ORDER.forEach((id) => {
-      const it = { label: GEN[id], detail: "", mine: false };
-      mergeItem(it, RECUR[id]);
-      mergeItem(it, d.items && d.items[id]);
-      rows.push({ start: toDate(base, TIMES.weekday[id]), label: it.label, detail: it.detail, mine: it.mine });
-    });
-  }
-  rows.sort((a, b) => a.start - b.start);
-  return { dow, day: d, rows };
-}
-
 function dayBase(offset) {
   const t = new Date();
   t.setDate(t.getDate() + offset);
@@ -86,12 +69,11 @@ function dayBase(offset) {
   return t;
 }
 
-function firstBlockOfNextDay(now) {
-  const t = new Date(now);
-  t.setDate(t.getDate() + 1);
+function dateForDow(dow) {
+  const t = new Date();
+  t.setDate(t.getDate() + (dow - t.getDay()));
   t.setHours(0, 0, 0, 0);
-  const r = buildTimeline(t);
-  return { block: r.rows[0], dayName: r.day.name };
+  return t;
 }
 
 function fmt12(d) {
@@ -102,6 +84,8 @@ function fmt12(d) {
   return { hm: h + ":" + String(m).padStart(2, "0"), ap };
 }
 
+function fmtT(d) { const s = fmt12(d); return s.hm + s.ap; }
+
 function dur(ms) {
   const mins = Math.max(0, Math.round(ms / 60000));
   if (mins < 1) return "in <1m";
@@ -110,53 +94,172 @@ function dur(ms) {
   return "in " + (h ? h + "h " : "") + m + "m";
 }
 
-/* --------------------------------- DOM --------------------------------- */
-const $ = (id) => document.getElementById(id);
+/* --------------------------- Personalization --------------------------- */
+function cabinHit(val, cabin) {
+  if (!cabin || !val) return false;
+  return Array.isArray(val) ? val.includes(cabin) : val === cabin;
+}
 
-/* ------------------------------ Rendering ------------------------------ */
+function classLocation() {
+  const g = SETTINGS.grade;
+  if (!g) return null;
+  if (CLASSES.junior.locations[g]) return CLASSES.junior.locations[g];
+  if (CLASSES.senior.locations[g]) return CLASSES.senior.locations[g];
+  return null;
+}
+
+/* Returns { mine, reason } for a block, given the saved settings. */
+function dutyFor(id, day, item) {
+  const cabin = SETTINGS.cabin;
+  const section = SETTINGS.section;
+  const isCounselor = SETTINGS.role !== "camper";
+  const a = day.assign || {};
+
+  if (id === "breakfast" && cabinHit(a.breakfast, cabin)) return { mine: true, reason: "Kitchen \u2014 breakfast" };
+  if (id === "lunch" && cabinHit(a.lunch, cabin)) return { mine: true, reason: "Kitchen \u2014 lunch" };
+  if (id === "supper" && cabinHit(a.supper, cabin)) return { mine: true, reason: "Kitchen \u2014 supper" };
+  if (id === "rise" && cabinHit(a.bathhouse, cabin)) return { mine: true, reason: "Bathhouse crew" };
+  if (id === "devo" && a.devoLead && a.devoLead === cabin) return { mine: true, reason: "Your cabin leads devo" };
+
+  if (section === "boys" && id === "cabindevo") return { mine: true, reason: "Lead cabin devo" };
+  if (section === "girls" && id === "swim") return { mine: true, reason: "Lead cabin devo" };
+
+  if (isCounselor && RECUR[id] && RECUR[id].counselor) return { mine: true, reason: RECUR[id].reason };
+  if (isCounselor && item && item.counselor) return { mine: true, reason: item.reason || "Counselor duty" };
+
+  return { mine: false, reason: null };
+}
+
+function labelFor(id, item) {
+  let label = (item && item.label) ? item.label : (GEN[id] || id);
+  const sec = SETTINGS.section;
+  if (sec === "boys") {
+    if (id === "swim") label = "Your cabin swims";
+    if (id === "cabindevo") label = "Cabin devo \u2014 you lead";
+  } else if (sec === "girls") {
+    if (id === "swim") label = "Cabin devo \u2014 you lead";
+    if (id === "cabindevo") label = "Your cabin swims";
+  }
+  return label;
+}
+
+function detailFor(id, item) {
+  let det = (item && item.detail) || (RECUR[id] && RECUR[id].detail) || "";
+  if (id === "bible") {
+    const loc = classLocation();
+    if (loc) det = (det ? det + " " : "") + "Your class: " + loc + ".";
+  }
+  return det;
+}
+
+function buildTimeline(base) {
+  const dow = base.getDay();
+  const d = DAY[dow];
+  const rows = [];
+  if (d.special) {
+    const tt = TIMES[d.special];
+    d.order.forEach((id) => {
+      const item = (d.items && d.items[id]) || {};
+      const du = dutyFor(id, d, item);
+      rows.push({ id, start: toDate(base, tt[id]), label: item.label || id, detail: detailFor(id, item), mine: du.mine, reason: du.reason });
+    });
+  } else {
+    WEEKDAY_ORDER.forEach((id) => {
+      const item = d.items && d.items[id];
+      const du = dutyFor(id, d, item);
+      rows.push({ id, start: toDate(base, TIMES.weekday[id]), label: labelFor(id, item), detail: detailFor(id, item), mine: du.mine, reason: du.reason });
+    });
+  }
+  rows.sort((a, b) => a.start - b.start);
+  return { dow, day: d, rows };
+}
+
+function firstBlockOfNextDay(now) {
+  const t = new Date(now);
+  t.setDate(t.getDate() + 1);
+  t.setHours(0, 0, 0, 0);
+  const r = buildTimeline(t);
+  return { block: r.rows[0], dayName: r.day.name };
+}
+
 function currentIndex(rows, now) {
   let cur = -1;
   for (let i = 0; i < rows.length; i++) {
-    if (rows[i].start <= now) cur = i;
-    else break;
+    if (rows[i].start <= now) cur = i; else break;
   }
   return cur;
 }
 
+/* --------------------------------- DOM --------------------------------- */
+const $ = (id) => document.getElementById(id);
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]
+  ));
+}
+
+/* ------------------------------ Rendering ------------------------------ */
 function render() {
   const now = new Date();
   updateClock(now);
 
-  const base = dayBase(viewOffset);
-  const { dow, day, rows } = buildTimeline(base);
-  const isToday = viewOffset === 0;
-  const cur = isToday ? currentIndex(rows, now) : -1;
+  const today = buildTimeline(dayBase(0));
+  $("cDay").textContent = "Day " + (today.dow + 1) + " \u00b7 " + today.day.name;
+  $("cTheme").textContent = today.day.theme ? ("Theme: " + today.day.theme) : "";
+  updateWho();
 
-  // day meta
-  $("cDay").textContent = "Day " + (dow + 1) + " \u00b7 " + day.name;
-  $("cTheme").textContent = day.theme ? ("Theme: " + day.theme) : "";
-  const prev = $("cPreview");
-  prev.style.display = isToday ? "none" : "inline-block";
-  if (!isToday) prev.textContent = "Previewing";
+  if (activeTab === "now") renderNowTab(today.rows, currentIndex(today.rows, now), today.day, now);
+  else if (activeTab === "week") renderWeekTab();
+  else if (activeTab === "mine") renderMineTab();
+  else if (activeTab === "info") renderInfoTab();
 
-  $("dayLabel").textContent = isToday ? "Today" : day.name;
-  $("backToday").classList.toggle("show", !isToday);
+  if (activeTab === "now") updateLive(today.rows, currentIndex(today.rows, now), now);
+  lastSig = sig(today.dow, currentIndex(today.rows, now), dutiesOnly, activeTab);
+}
 
-  // now / next cards (live only)
-  const nowCard = $("nowCard");
-  const nextCard = $("nextCard");
-  if (!isToday) {
-    nowCard.style.display = "none";
-    nextCard.style.display = "none";
+/* ---- Now tab ---- */
+function renderNowTab(rows, cur, day, now) {
+  renderNow(rows, cur, now);
+
+  $("tlTitle").textContent = "Today \u00b7 " + day.name;
+  const ul = $("timeline");
+  ul.innerHTML = "";
+  const visible = dutiesOnly ? rows.filter((r) => r.mine) : rows;
+  $("tlCount").textContent = dutiesOnly
+    ? visible.length + " of " + rows.length + " (your duties)"
+    : rows.length + " blocks";
+
+  if (!visible.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "No duties flagged for you today.";
+    ul.appendChild(li);
   } else {
-    nowCard.style.display = "";
-    renderNow(rows, cur, now);
+    rows.forEach((r, i) => {
+      if (dutiesOnly && !r.mine) return;
+      ul.appendChild(rowEl(r, i, cur, true));
+    });
   }
 
-  renderTimeline(rows, cur, day);
-  updateLive(rows, cur, now);
+  const noteEl = $("dayNote");
+  if (day.note) { noteEl.style.display = "block"; noteEl.textContent = day.note; }
+  else noteEl.style.display = "none";
+}
 
-  lastSig = sig(dow, cur, dutiesOnly, viewOffset);
+function rowEl(r, i, cur, live) {
+  const li = document.createElement("li");
+  const cls = [];
+  if (live && i < cur) cls.push("done");
+  if (live && i === cur) { cls.push("cur"); li.id = "curRow"; }
+  if (r.mine) cls.push("mine");
+  li.className = cls.join(" ");
+  const s = fmt12(r.start);
+  const badge = r.mine && r.reason ? '<span class="rbadge">' + esc(r.reason) + "</span>" : "";
+  li.innerHTML = '<div class="t">' + s.hm + s.ap + "</div><div><div class=\"nm\">" +
+    esc(r.label) + badge + "</div>" +
+    (r.detail ? '<div class="dt">' + esc(r.detail) + "</div>" : "") + "</div>";
+  return li;
 }
 
 function renderNow(rows, cur, now) {
@@ -172,16 +275,13 @@ function renderNow(rows, cur, now) {
   }
   const b = rows[cur];
   nowCard.className = "now" + (b.mine ? " mine" : "");
-  $("nowTitle").innerHTML = esc(b.label) + (b.mine ? '<span class="badge">Your duty</span>' : "");
+  $("nowTitle").innerHTML = esc(b.label) + (b.mine ? '<span class="badge">' + esc(b.reason || "Your duty") + "</span>" : "");
   $("nowDetail").textContent = b.detail || "";
   const s = fmt12(b.start);
   $("nowSince").textContent = "Since " + s.hm + s.ap;
   $("nowBar").style.display = "block";
   if (cur + 1 < rows.length) setNext(rows[cur + 1], now, false);
-  else {
-    const nx = firstBlockOfNextDay(now);
-    setNext(nx.block, now, true, nx.dayName);
-  }
+  else { const nx = firstBlockOfNextDay(now); setNext(nx.block, now, true); }
 }
 
 function setNext(b, now, tomorrow) {
@@ -196,46 +296,143 @@ function setNext(b, now, tomorrow) {
   $("nextIn").textContent = dur(b.start - now);
 }
 
-function renderTimeline(rows, cur, day) {
-  $("tlTitle").textContent = viewOffset === 0 ? "Today" : day.name;
-  const ul = $("timeline");
-  ul.innerHTML = "";
-
-  const visible = dutiesOnly ? rows.filter((r) => r.mine) : rows;
-  $("tlCount").textContent = dutiesOnly
-    ? visible.length + " of " + rows.length + " (your duties)"
-    : rows.length + " blocks";
-
-  if (!visible.length) {
-    const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = "No Cabin F duties flagged on " + day.name + ".";
-    ul.appendChild(li);
-  } else {
-    rows.forEach((r, i) => {
-      if (dutiesOnly && !r.mine) return;
-      const li = document.createElement("li");
-      const cls = [];
-      if (i < cur) cls.push("done");
-      if (i === cur) { cls.push("cur"); li.id = "curRow"; }
-      if (r.mine) cls.push("mine");
-      li.className = cls.join(" ");
-      const s = fmt12(r.start);
-      li.innerHTML = '<div class="t">' + s.hm + s.ap + "</div><div><div class=\"nm\">" +
-        esc(r.label) + "</div>" +
-        (r.detail ? '<div class="dt">' + esc(r.detail) + "</div>" : "") + "</div>";
-      ul.appendChild(li);
-    });
+/* ---- Week tab ---- */
+function renderWeekTab() {
+  const chips = $("weekChips");
+  chips.innerHTML = "";
+  const todayDow = new Date().getDay();
+  for (let dow = 0; dow < 7; dow++) {
+    const b = document.createElement("button");
+    b.className = "chip" + (dow === weekIndex ? " on" : "") + (dow === todayDow ? " today" : "");
+    b.textContent = DAY[dow].name.slice(0, 3);
+    b.addEventListener("click", () => { weekIndex = dow; renderWeekTab(); });
+    chips.appendChild(b);
   }
 
-  const noteEl = $("dayNote");
+  const { day, rows } = buildTimeline(dateForDow(weekIndex));
+  $("weekTitle").textContent = "Day " + (weekIndex + 1) + " \u00b7 " + day.name;
+  $("weekTheme").textContent = day.theme ? ("Theme: " + day.theme) : "";
+  $("weekCount").textContent = rows.length + " blocks";
+
+  const ul = $("weekTimeline");
+  ul.innerHTML = "";
+  const live = weekIndex === todayDow;
+  const cur = live ? currentIndex(rows, new Date()) : -1;
+  rows.forEach((r, i) => ul.appendChild(rowEl(r, i, cur, live)));
+
+  const noteEl = $("weekNote");
   if (day.note) { noteEl.style.display = "block"; noteEl.textContent = day.note; }
   else noteEl.style.display = "none";
 }
 
-/* Lightweight per-second updates that don't need a full rebuild */
+/* ---- Mine tab ---- */
+function renderMineTab() {
+  const host = $("mineBody");
+  host.innerHTML = "";
+
+  if (!SETTINGS.configured || !SETTINGS.cabin) {
+    host.innerHTML = '<div class="prompt"><p>Tell us your cabin and we\u2019ll pull out everything that\u2019s yours \u2014 kitchen shifts, bathhouse crew, devo nights and more.</p>' +
+      '<button class="primary" id="minePromptBtn">Set up my cabin</button></div>';
+    $("minePromptBtn").addEventListener("click", openSetup);
+    return;
+  }
+
+  let total = 0;
+  for (let dow = 0; dow < 7; dow++) {
+    const { day, rows } = buildTimeline(dateForDow(dow));
+    const mine = rows.filter((r) => r.mine);
+    if (!mine.length) continue;
+    total += mine.length;
+    const sec = document.createElement("section");
+    sec.className = "mineday";
+    let html = "<h4>" + esc(day.name) + "</h4><ul>";
+    mine.forEach((r) => {
+      html += '<li><span class="t">' + esc(fmtT(r.start)) + '</span><span class="m"><b>' +
+        esc(r.label) + "</b>" + (r.reason ? ' <span class="rbadge">' + esc(r.reason) + "</span>" : "") +
+        (r.detail ? '<span class="dt">' + esc(r.detail) + "</span>" : "") + "</span></li>";
+    });
+    html += "</ul>";
+    sec.innerHTML = html;
+    host.appendChild(sec);
+  }
+
+  if (!total) {
+    host.innerHTML = '<div class="prompt"><p>No duties are flagged for Cabin ' + esc(SETTINGS.cabin) +
+      '. Double-check your setup, or you may just be off rotation.</p>' +
+      '<button class="primary" id="minePromptBtn">Edit my setup</button></div>';
+    $("minePromptBtn").addEventListener("click", openSetup);
+  }
+}
+
+/* ---- Info tab ---- */
+function renderInfoTab() {
+  const host = $("infoBody");
+  host.innerHTML = "";
+
+  const loc = classLocation();
+  if (loc) {
+    host.appendChild(card("Your Bible class",
+      "<p><b>" + esc(loc) + "</b> \u2014 grade " + esc(SETTINGS.grade) + ". Same spot every day; teachers rotate.</p>"));
+  }
+
+  // Junior / senior class locations
+  host.appendChild(card(CLASSES.junior.title, locList(CLASSES.junior.locations) +
+    teacherList(CLASSES.juniorTeachers) + note(CLASSES.juniorFriday)));
+  host.appendChild(card(CLASSES.senior.title, locList(CLASSES.senior.locations) +
+    teacherList(CLASSES.seniorTeachers) + note(CLASSES.seniorFriday)));
+  host.appendChild(card("Bible class \u2014 how it works", "<p>" + esc(CLASSES.note) + "</p>"));
+
+  // Camp awards
+  host.appendChild(card(INFO.honorCamper.title, ulPoints(INFO.honorCamper.points)));
+  host.appendChild(card(INFO.hensel.title, ulPoints(INFO.hensel.points)));
+
+  // Theme days
+  let themes = "<ul class=\"kv\">";
+  INFO.themes.forEach((t) => { themes += "<li><span>" + esc(t.day) + "</span><span>" + esc(t.theme) + "</span></li>"; });
+  themes += "</ul>";
+  host.appendChild(card("Theme days", themes));
+
+  host.appendChild(card("Arrival", "<p>" + esc(INFO.arrivalFee) + "</p>"));
+}
+
+function card(title, bodyHtml) {
+  const d = document.createElement("section");
+  d.className = "info-card";
+  d.innerHTML = "<h4>" + esc(title) + "</h4>" + bodyHtml;
+  return d;
+}
+function locList(obj) {
+  const seen = new Set();
+  let html = "<ul class=\"kv\">";
+  Object.keys(obj).forEach((g) => {
+    const v = obj[g];
+    const key = v + "";
+    if (seen.has(key)) return; seen.add(key);
+    // collapse grade ranges that share a location
+    const grades = Object.keys(obj).filter((k) => obj[k] === v);
+    const label = grades.length > 1 ? grades[0] + "\u2013" + grades[grades.length - 1] : grades[0];
+    html += "<li><span>Grade " + esc(label) + "</span><span>" + esc(v) + "</span></li>";
+  });
+  return html + "</ul>";
+}
+function teacherList(arr) {
+  let html = "<div class=\"teachers\">";
+  arr.forEach((t) => {
+    html += "<div class=\"tch\"><b>" + esc(t.name) + "</b><span>" + esc(t.start) + "</span><i>" +
+      esc(t.lesson) + " \u00b7 " + esc(t.text) + "</i></div>";
+  });
+  return html + "</div>";
+}
+function note(txt) { return '<p class="fri">' + esc(txt) + "</p>"; }
+function ulPoints(arr) {
+  let html = "<ul class=\"pts\">";
+  arr.forEach((p) => { html += "<li>" + esc(p) + "</li>"; });
+  return html + "</ul>";
+}
+
+/* Lightweight per-second updates for the Now tab */
 function updateLive(rows, cur, now) {
-  if (viewOffset !== 0) { $("fab").classList.remove("show"); return; }
+  if (activeTab !== "now") { $("fab").classList.remove("show"); return; }
   if (cur === -1) {
     if (rows[0]) $("nextIn").textContent = dur(rows[0].start - now);
     $("nowBar").style.display = "none";
@@ -248,22 +445,18 @@ function updateLive(rows, cur, now) {
     $("nowBarFill").style.width = pct + "%";
     $("nextIn").textContent = dur(nextStart - now);
   }
-  // day progress (06:00 -> lights out window for a friendly bar)
   const dayStart = rows[0] ? rows[0].start : now;
   const dayEnd = rows[rows.length - 1] ? rows[rows.length - 1].start : now;
   const span = dayEnd - dayStart;
   const dp = span > 0 ? Math.min(100, Math.max(0, ((now - dayStart) / span) * 100)) : 0;
   $("dayProgressFill").style.width = dp + "%";
 
-  // jump-to-now FAB when the current row is off-screen
   const row = $("curRow");
   if (row) {
     const r = row.getBoundingClientRect();
-    const off = r.bottom < 80 || r.top > window.innerHeight - 40;
+    const off = r.bottom < 100 || r.top > window.innerHeight - 80;
     $("fab").classList.toggle("show", off);
-  } else {
-    $("fab").classList.remove("show");
-  }
+  } else { $("fab").classList.remove("show"); }
 }
 
 function updateClock(now) {
@@ -273,20 +466,85 @@ function updateClock(now) {
   $("cSec").textContent = ":" + String(now.getSeconds()).padStart(2, "0");
 }
 
-function sig(dow, cur, duties, offset) {
-  return [dow, cur, duties, offset].join("|");
+function updateWho() {
+  const el = $("whoPill");
+  if (SETTINGS.configured && SETTINGS.cabin) {
+    const sec = SETTINGS.section ? " \u00b7 " + SETTINGS.section[0].toUpperCase() + SETTINGS.section.slice(1) : "";
+    el.textContent = "Cabin " + SETTINGS.cabin + sec;
+    el.classList.remove("unset");
+  } else {
+    el.textContent = "Set up";
+    el.classList.add("unset");
+  }
 }
 
-/* Tick: cheap clock update; full re-render only when structure changes */
+function sig(dow, cur, duties, tab) { return [dow, cur, duties, tab].join("|"); }
+
 function tick() {
   const now = new Date();
   updateClock(now);
-  if (viewOffset !== 0) return;
+  if (activeTab !== "now") return;
   const { dow, rows } = buildTimeline(dayBase(0));
   const cur = currentIndex(rows, now);
-  const s = sig(dow, cur, dutiesOnly, viewOffset);
+  const s = sig(dow, cur, dutiesOnly, activeTab);
   if (s !== lastSig) { render(); return; }
   updateLive(rows, cur, now);
+}
+
+/* -------------------------------- Tabs --------------------------------- */
+function setTab(name) {
+  activeTab = name;
+  ["now", "week", "mine", "info"].forEach((t) => {
+    $("panel-" + t).classList.toggle("on", t === name);
+    $("tab-" + t).classList.toggle("on", t === name);
+    $("tab-" + t).setAttribute("aria-selected", String(t === name));
+  });
+  $("fab").classList.remove("show");
+  window.scrollTo({ top: 0 });
+  render();
+}
+
+/* ----------------------------- Setup / settings ------------------------ */
+function buildSetup() {
+  const cab = $("setCabin");
+  cab.innerHTML = '<option value="">\u2014</option>' +
+    CABINS.map((c) => '<option value="' + c + '"' + (SETTINGS.cabin === c ? " selected" : "") + ">Cabin " + c + "</option>").join("");
+  const gr = $("setGrade");
+  gr.innerHTML = '<option value="">\u2014</option>' +
+    GRADES.map((g) => '<option value="' + g + '"' + (SETTINGS.grade === g ? " selected" : "") + ">" + ordinal(g) + "</option>").join("");
+  $("setSection").value = SETTINGS.section || "";
+  $("setRole").value = SETTINGS.role || "counselor";
+}
+
+function ordinal(n) {
+  const v = +n;
+  const s = ["th", "st", "nd", "rd"], k = v % 100;
+  return v + (s[(k - 20) % 10] || s[k] || s[0]) + " grade";
+}
+
+function openSetup() {
+  buildSetup();
+  $("sheetBackdrop").classList.add("open");
+  $("setupSheet").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeSetup() {
+  $("setupSheet").classList.remove("open");
+  if (!$("editSheet").classList.contains("open")) {
+    $("sheetBackdrop").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+}
+function saveSetup() {
+  SETTINGS.cabin = $("setCabin").value;
+  SETTINGS.section = $("setSection").value;
+  SETTINGS.grade = $("setGrade").value;
+  SETTINGS.role = $("setRole").value || "counselor";
+  SETTINGS.configured = true;
+  const ok = saveSettings();
+  closeSetup();
+  render();
+  toast(ok ? "Saved" : "Saved for this session only");
 }
 
 /* -------------------------------- Edit sheet --------------------------- */
@@ -299,14 +557,12 @@ function buildEdit() {
     let html = "<h4>" + g.title + "</h4>";
     g.ids.forEach((id) => {
       html += '<div class="trow"><label>' + g.labels[id] + "</label>" +
-        '<input type="time" data-grp="' + g.key + '" data-id="' + id + '" value="' +
-        TIMES[g.key][id] + '"></div>';
+        '<input type="time" data-grp="' + g.key + '" data-id="' + id + '" value="' + TIMES[g.key][id] + '"></div>';
     });
     div.innerHTML = html;
     host.appendChild(div);
   });
 }
-
 function saveTimes() {
   document.querySelectorAll("#editGroups input").forEach((inp) => {
     const g = inp.getAttribute("data-grp");
@@ -315,10 +571,9 @@ function saveTimes() {
   });
   const ok = persist();
   render();
-  closeSheet();
+  closeEdit();
   toast(ok ? "Times saved" : "Saved for this session only");
 }
-
 function resetTimes() {
   TIMES = deepDefaults();
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
@@ -326,20 +581,21 @@ function resetTimes() {
   render();
   toast("Reset to camp defaults");
 }
-
-/* --------------------------------- UI glue ----------------------------- */
-function openSheet() {
+function openEdit() {
   buildEdit();
   $("sheetBackdrop").classList.add("open");
   $("editSheet").classList.add("open");
   document.body.style.overflow = "hidden";
 }
-function closeSheet() {
-  $("sheetBackdrop").classList.remove("open");
+function closeEdit() {
   $("editSheet").classList.remove("open");
-  document.body.style.overflow = "";
+  if (!$("setupSheet").classList.contains("open")) {
+    $("sheetBackdrop").classList.remove("open");
+    document.body.style.overflow = "";
+  }
 }
 
+/* --------------------------------- UI glue ----------------------------- */
 let toastTimer = null;
 function toast(msg) {
   const t = $("toast");
@@ -349,48 +605,40 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
 }
 
-function esc(s) {
-  return String(s).replace(/[&<>"]/g, (c) => (
-    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]
-  ));
-}
-
 function jumpToNow() {
-  viewOffset = 0;
-  render();
   const row = $("curRow") || $("nowCard");
   if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-function shiftDay(delta) {
-  viewOffset = Math.max(-1, Math.min(6, viewOffset + delta));
-  render();
-}
-
 function wire() {
-  $("prevDay").addEventListener("click", () => shiftDay(-1));
-  $("nextDay").addEventListener("click", () => shiftDay(1));
-  $("backToday").addEventListener("click", () => { viewOffset = 0; render(); });
+  ["now", "week", "mine", "info"].forEach((t) => {
+    $("tab-" + t).addEventListener("click", () => setTab(t));
+  });
+
+  $("whoPill").addEventListener("click", openSetup);
   $("dutiesToggle").addEventListener("click", (e) => {
     dutiesOnly = !dutiesOnly;
     e.currentTarget.setAttribute("aria-pressed", String(dutiesOnly));
     render();
   });
-  $("openEdit").addEventListener("click", openSheet);
-  $("bannerEdit").addEventListener("click", openSheet);
-  $("sheetClose").addEventListener("click", closeSheet);
-  $("sheetBackdrop").addEventListener("click", closeSheet);
+
+  $("openEdit").addEventListener("click", openEdit);
+  $("bannerEdit").addEventListener("click", openEdit);
+  $("sheetClose").addEventListener("click", closeEdit);
   $("saveBtn").addEventListener("click", saveTimes);
   $("resetBtn").addEventListener("click", resetTimes);
+
+  $("setupSave").addEventListener("click", saveSetup);
+  $("setupClose").addEventListener("click", closeSetup);
+
+  $("sheetBackdrop").addEventListener("click", () => { closeEdit(); closeSetup(); });
   $("fab").addEventListener("click", jumpToNow);
   $("bannerClose").addEventListener("click", () => {
     $("banner").style.display = "none";
     try { localStorage.setItem("ctcc_banner_hidden", "1"); } catch (e) { /* ignore */ }
   });
 
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
-
-  // re-sync immediately when tab regains focus (clock can drift while backgrounded)
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeEdit(); closeSetup(); } });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
 }
 
@@ -399,8 +647,10 @@ function init() {
     if (localStorage.getItem("ctcc_banner_hidden") === "1") $("banner").style.display = "none";
   } catch (e) { /* ignore */ }
   wire();
-  render();
+  setTab("now");
   setInterval(tick, 1000);
+
+  if (!SETTINGS.configured) openSetup();
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
