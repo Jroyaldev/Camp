@@ -1,7 +1,7 @@
 {
-  "name": "Right Now · Cabin F",
-  "short_name": "Cabin F",
-  "description": "Live Cabin F camp schedule — what's happening now, what's next, and your duties.",
+  "name": "C.T.C.C. Camp Companion",
+  "short_name": "C.T.C.C.",
+  "description": "Live C.T.C.C. camp schedule for counselors — what's happening now, what's next, and your cabin's duties.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

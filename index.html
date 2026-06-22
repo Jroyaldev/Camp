@@ -5,91 +5,147 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#E7E4D8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1A1916" media="(prefers-color-scheme: dark)">
-<meta name="description" content="Live Cabin F camp schedule — what's happening right now, what's next, and your duties.">
+<meta name="description" content="Live C.T.C.C. camp schedule for counselors — what's happening right now, what's next, and your cabin's duties.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Cabin F">
-<title>Right Now · Cabin F</title>
+<meta name="apple-mobile-web-app-title" content="C.T.C.C.">
+<title>C.T.C.C. Camp</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <link rel="stylesheet" href="./assets/css/styles.css">
 </head>
 <body>
-<div class="wrap">
 
-  <header class="clockbar">
+<header class="clockbar">
+  <div class="cbrow">
     <div class="clock">
       <span class="time" id="cTime">--:--</span><span class="ampm" id="cAmpm"></span>
       <span class="sec" id="cSec"></span>
     </div>
-    <div class="daymeta">
-      <span class="pill" id="cDay">&mdash;</span>
-      <span class="pill preview" id="cPreview" style="display:none">Previewing</span>
-      <span id="cTheme"></span>
-    </div>
-    <div class="dayprogress"><span id="dayProgressFill" style="width:0%"></span></div>
-  </header>
-
-  <div class="controls">
-    <div class="daynav">
-      <button id="prevDay" aria-label="Previous day">&#8249;</button>
-      <span class="label" id="dayLabel">Today</span>
-      <button id="nextDay" aria-label="Next day">&#8250;</button>
-    </div>
-    <button class="toggle" id="dutiesToggle" aria-pressed="false">
-      <span class="dot"></span> My duties
-    </button>
+    <button class="who unset" id="whoPill">Set up</button>
   </div>
-  <button class="preview-exit" id="backToday">&#8617; Back to today</button>
-
-  <div class="banner" id="banner">
-    <button class="close" id="bannerClose" aria-label="Dismiss">&times;</button>
-    <b>Weekday times are the official camp schedule</b> (ctccamp.org). Sunday (arrival) and
-    Saturday (checkout) times are estimates &mdash; edit anytime.
-    <br><button class="open-edit" id="bannerEdit">Edit times</button>
+  <div class="daymeta">
+    <span class="pill" id="cDay">&mdash;</span>
+    <span id="cTheme"></span>
   </div>
+  <div class="dayprogress"><span id="dayProgressFill" style="width:0%"></span></div>
+</header>
 
-  <section class="now" id="nowCard">
-    <div class="eyebrow">Right now</div>
-    <h1 id="nowTitle">&mdash;</h1>
-    <div class="detail" id="nowDetail"></div>
-    <div class="since" id="nowSince"></div>
-    <div class="nowbar" id="nowBar" style="display:none"><span id="nowBarFill" style="width:0%"></span></div>
+<main class="wrap">
+
+  <!-- NOW -->
+  <section class="panel on" id="panel-now">
+    <div class="banner" id="banner">
+      <button class="close" id="bannerClose" aria-label="Dismiss">&times;</button>
+      <b>Weekday times are the official camp schedule</b> (ctccamp.org). Sunday (arrival) and
+      Saturday (checkout) times are estimates &mdash; edit anytime.
+      <br><button class="open-edit" id="bannerEdit">Edit times</button>
+    </div>
+
+    <section class="now" id="nowCard">
+      <div class="eyebrow">Right now</div>
+      <h1 id="nowTitle">&mdash;</h1>
+      <div class="detail" id="nowDetail"></div>
+      <div class="since" id="nowSince"></div>
+      <div class="nowbar" id="nowBar" style="display:none"><span id="nowBarFill" style="width:0%"></span></div>
+    </section>
+
+    <section class="next" id="nextCard">
+      <div class="l"><div class="eyebrow">Next</div><h2 id="nextTitle">&mdash;</h2><div class="nd" id="nextDetail"></div></div>
+      <div class="r"><div class="at" id="nextAt"></div><div class="in" id="nextIn"></div></div>
+    </section>
+
+    <div class="tl-head">
+      <div>
+        <div class="eyebrow">Timeline</div>
+        <h3 id="tlTitle">Today</h3>
+        <span class="count" id="tlCount"></span>
+      </div>
+      <button class="toggle" id="dutiesToggle" aria-pressed="false"><span class="dot"></span> My duties</button>
+    </div>
+    <ul class="tl" id="timeline"></ul>
+    <div class="daynote" id="dayNote" style="display:none"></div>
   </section>
 
-  <section class="next" id="nextCard">
-    <div class="l"><div class="eyebrow">Next</div><h2 id="nextTitle">&mdash;</h2><div class="nd" id="nextDetail"></div></div>
-    <div class="r"><div class="at" id="nextAt"></div><div class="in" id="nextIn"></div></div>
+  <!-- WEEK -->
+  <section class="panel" id="panel-week">
+    <div class="chips" id="weekChips"></div>
+    <div class="tl-head">
+      <div>
+        <h3 id="weekTitle">&mdash;</h3>
+        <span class="count" id="weekTheme"></span>
+        <span class="count" id="weekCount"></span>
+      </div>
+    </div>
+    <ul class="tl" id="weekTimeline"></ul>
+    <div class="daynote" id="weekNote" style="display:none"></div>
   </section>
 
-  <div class="tl-head">
-    <div class="eyebrow">Timeline</div>
-    <h3 id="tlTitle">Today</h3>
-    <span class="count" id="tlCount"></span>
-  </div>
-  <ul class="tl" id="timeline"></ul>
-  <div class="daynote" id="dayNote" style="display:none"></div>
+  <!-- MINE -->
+  <section class="panel" id="panel-mine">
+    <div class="tl-head"><div><div class="eyebrow">Your week</div><h3 id="mineHead">Duties for your cabin</h3></div></div>
+    <div id="mineBody"></div>
+  </section>
 
-  <div class="controls" style="margin-top:18px">
-    <button class="toggle" id="openEdit" style="margin-left:0">&#9201; Edit times</button>
-  </div>
+  <!-- INFO -->
+  <section class="panel" id="panel-info">
+    <div class="tl-head"><div><div class="eyebrow">Reference</div><h3>Camp info</h3></div></div>
+    <div id="infoBody"></div>
+    <div class="controls">
+      <button class="toggle" id="openEdit">&#9201; Edit schedule times</button>
+    </div>
+    <footer>
+      C.T.C.C. camp companion &middot; live from your device clock &middot; works offline once loaded.<br>
+      Maps weekday &rarr; camp day (Sun = Day 1 &hellip; Sat = Day 7). Set your cabin to personalize.
+    </footer>
+  </section>
 
-  <footer>
-    Live from your device clock &middot; maps weekday &rarr; camp day (Sun = Day 1 &hellip; Sat = Day 7).<br>
-    Cabin F duties flagged in clay. Works offline once loaded.
-  </footer>
-</div>
+</main>
 
 <button class="fab" id="fab">Now</button>
 
+<!-- Bottom tab bar -->
+<nav class="tabbar" role="tablist">
+  <button id="tab-now" class="on" role="tab" aria-selected="true"><span class="ti">&#9679;</span>Now</button>
+  <button id="tab-week" role="tab" aria-selected="false"><span class="ti">&#9783;</span>Week</button>
+  <button id="tab-mine" role="tab" aria-selected="false"><span class="ti">&#9733;</span>Mine</button>
+  <button id="tab-info" role="tab" aria-selected="false"><span class="ti">&#9432;</span>Info</button>
+</nav>
+
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+<!-- Setup / settings -->
+<div class="sheet" id="setupSheet" role="dialog" aria-modal="true" aria-label="Your setup">
+  <div class="grab"></div>
+  <header><h3>Your setup</h3><button class="x" id="setupClose" aria-label="Close">&times;</button></header>
+  <div class="body">
+    <p class="hint">Tell us about your cabin so the app can flag your duties.</p>
+    <div class="frow"><label for="setCabin">Cabin</label><select id="setCabin"></select></div>
+    <div class="frow"><label for="setSection">Section</label>
+      <select id="setSection">
+        <option value="">&mdash;</option>
+        <option value="boys">Boys</option>
+        <option value="girls">Girls</option>
+      </select>
+    </div>
+    <div class="frow"><label for="setGrade">Grade (for Bible class)</label><select id="setGrade"></select></div>
+    <div class="frow"><label for="setRole">Role</label>
+      <select id="setRole">
+        <option value="counselor">Counselor</option>
+        <option value="camper">Camper</option>
+      </select>
+    </div>
+  </div>
+  <div class="editbtns">
+    <button class="save" id="setupSave">Save</button>
+  </div>
+</div>
+
+<!-- Edit times -->
 <div class="sheet" id="editSheet" role="dialog" aria-modal="true" aria-label="Edit times">
   <div class="grab"></div>
-  <header>
-    <h3>Edit times</h3>
-    <button class="x" id="sheetClose" aria-label="Close">&times;</button>
-  </header>
+  <header><h3>Edit times</h3><button class="x" id="sheetClose" aria-label="Close">&times;</button></header>
   <div class="body" id="editGroups"></div>
   <div class="editbtns">
     <button class="reset" id="resetBtn">Reset defaults</button>
