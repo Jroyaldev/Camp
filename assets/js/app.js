@@ -201,10 +201,11 @@ function buildTimeline(base) {
       rows.push({ id, start: toDate(base, tt[id]), label: item.label || id, detail: detailFor(id, item, dow), mine: du.mine, reason: du.reason });
     });
   } else {
-    WEEKDAY_ORDER.forEach((id) => {
+    (d.order || WEEKDAY_ORDER).forEach((id) => {
       const item = d.items && d.items[id];
       const du = dutyFor(id, d, item);
-      rows.push({ id, start: toDate(base, TIMES.weekday[id]), label: labelFor(id, item), detail: detailFor(id, item, dow), mine: du.mine, reason: du.reason });
+      const t = (d.times && d.times[id]) || TIMES.weekday[id];
+      rows.push({ id, start: toDate(base, t), label: labelFor(id, item), detail: detailFor(id, item, dow), mine: du.mine, reason: du.reason });
     });
   }
   rows.sort((a, b) => a.start - b.start);
@@ -424,9 +425,9 @@ function renderInfoTab() {
 
   // 3. All Bible classes & teachers — the counselor's tier first
   const jr = sect(CLASSES.junior.title, locList(CLASSES.junior.locations) +
-    teacherList(CLASSES.juniorTeachers, tier === "junior" ? todayName : "") + note(CLASSES.juniorFriday));
+    teacherList(CLASSES.juniorTeachers, tier === "junior" ? todayName : "") + note("Friday: " + CLASSES.juniorFriday));
   const sr = sect(CLASSES.senior.title, locList(CLASSES.senior.locations) +
-    teacherList(CLASSES.seniorTeachers, tier === "senior" ? todayName : "") + note(CLASSES.seniorFriday));
+    teacherList(CLASSES.seniorTeachers, tier === "senior" ? todayName : "") + note("Friday: " + CLASSES.seniorFriday));
   host.appendChild(acc("All Bible classes & teachers",
     (tier === "senior" ? sr + jr : jr + sr) + sect("How it works", "<p>" + esc(CLASSES.note) + "</p>")));
 

@@ -1,7 +1,9 @@
 /* ---------------------------------------------------------------------------
  * C.T.C.C. camp schedule data
- * Source: official C.T.C.C. weekday grid (ctccamp.org). Sunday (arrival) and
- * Saturday (checkout) times are estimates and are editable in the app.
+ * Source: official C.T.C.C. daily schedule (ctccamp.org). Sunday, Mon\u2013Thu and
+ * Friday times are published; Friday runs later (report/Bible/lunch) and ends with
+ * Awards + Bonfire instead of worship. Saturday (checkout) times after breakfast
+ * are estimates. All weekday times are editable in the app.
  *
  * Personalization is data-driven: each weekday carries an `assign` map of which
  * cabins are on kitchen / bathhouse / devo duty, and items can flag a generic
@@ -130,13 +132,21 @@ export const DAY = {
       breakfast: { detail: "Kitchen help: Cabins F, 7." },
       lunch: { detail: "Kitchen help: Cabins A, 3." },
       supper: { detail: "Kitchen help: Cabins G, 4." },
-      worship: { label: "Worship & Whiffle Ball", detail: "Britt intro \u00b7 Harrison song-leading \u00b7 Daniel Odiorne \u201cFish Out of Water\u201d \u00b7 all umps & coaches. Honor Camper: campers drop names in the box." },
+      worship: { label: "Worship & Whiffle Ball", detail: "Britt intro \u00b7 Harrison song-leading \u00b7 Daniel Odiorne \u201cFish Out of Water\u201d \u00b7 all umps & coaches. Honor Camper: counselors drop names in the box." },
       porch: { detail: "Back: Jonny Royal \u00b7 Front: Brady Vann. Snack: Coke + Pop Ice." },
     },
     note: "Mr. & Miss Hensel nominations from each cabin due to Chance & Lori before supper tonight.",
   },
   5: {
     name: "Friday", theme: "School colors day",
+    /* Friday runs on its own published times (report/Bible/lunch are later
+     * than Mon\u2013Thu) and the evening is Awards + Bonfire, not worship. */
+    order: [
+      "rise", "devo", "breakfast", "sports", "report", "bible", "lunch", "rest",
+      "reflection", "swim", "cabindevo", "getready", "supper", "awards", "bonfire",
+      "porch", "lights",
+    ],
+    times: { report: "11:00", bible: "11:30", lunch: "12:15", awards: "19:30", bonfire: "20:30" },
     assign: { devoLead: null, bathhouse: "F", breakfast: ["C", "E"], lunch: ["G", "4"], supper: ["C", "6"] },
     items: {
       devo: { detail: "Korbin leads." },
@@ -144,8 +154,10 @@ export const DAY = {
       breakfast: { detail: "Kitchen help: Cabins C, E." },
       lunch: { detail: "Kitchen help: Cabins G, 4. Mr. & Miss Hensel vote ~noon. Counselor meeting at lunch (Honor Camper).", counselor: true, reason: "Counselor meeting" },
       supper: { detail: "Kitchen help: Cabins C, 6." },
-      worship: { label: "Worship, Awards & Bonfire", detail: "Awards & slide show \u00b7 Honor Camper (Britt & Blan) \u00b7 Mr. & Miss Hensel (Lori & Chance) \u00b7 Overall Sports (Tim) \u00b7 Joe singing \u00b7 Bonfire \u2014 Tim Farmer \u201cYou Only Have to Cast the Net.\u201d" },
+      awards: { label: "Awards Ceremony & Slide Show", detail: "Honor Camper (Britt & Blan) \u00b7 Mr. & Miss Hensel (Lori & Chance) \u00b7 Overall Sports (Tim Farmer) \u00b7 slide show \u00b7 Joe Squiers singing." },
+      bonfire: { label: "Bonfire", detail: "Tim Farmer \u2014 \u201cYou Only Have to Cast the Net.\u201d Bonfire crew runs it; fire out & area cleaned after." },
       porch: { detail: "Back/front porch \u2014 Squiers. Snack: Coke + remaining food." },
+      lights: { detail: "Lights out \u2014 pack the trailers with all kitchen/cafeteria items at this time." },
     },
     note: "Tear-down begins: swim gear pulled, kitchen & porches packed.",
   },
@@ -182,8 +194,8 @@ export const CLASSES = {
     { name: "Matt Parker & Daniel Odiorne", start: "Cabin 5", lesson: "Called Before Changed", text: "Mark 1:16-20" },
     { name: "Jake Petty", start: "Quad Breezeway", lesson: "God Works While We Wait", text: "Mark 4:26-29" },
   ],
-  juniorFriday: "Friday: all junior classes combine at the amphitheater. Teacher: Harrison Armstrong \u2014 \u201cDrop The Nets\u201d (Luke 5:1-11).",
-  seniorFriday: "Friday: senior boys meet on the back porch (Jake Agin); senior girls meet in the quad (Ashlyn Montgomery). \u201cDrop The Nets\u201d (Luke 5:1-11).",
+  juniorFriday: "All junior classes combine at the amphitheater. Teacher: Harrison Armstrong \u2014 \u201cDrop The Nets\u201d (Luke 5:1-11).",
+  seniorFriday: "Senior boys meet on the back porch (Jake Agin); senior girls meet in the quad (Ashlyn Montgomery). \u201cDrop The Nets\u201d (Luke 5:1-11).",
 };
 
 /* General reference shown on the Info tab */
